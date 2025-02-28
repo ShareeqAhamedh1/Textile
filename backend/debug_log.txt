@@ -1,0 +1,9 @@
+Array
+(
+    [expense_id] => 13
+    [amount] => 222
+    [description] => Foodqwe
+    [category] => vendor
+    [expense_date] => 2025-02-25
+    [vendor_name] => 
+)
