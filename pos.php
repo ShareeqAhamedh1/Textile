@@ -614,6 +614,7 @@ let updateAjaxRequest; // renamed to avoid conflicts
 
 // Function to update item quantity with a debounce delay
 function updateQnty(id, qnty) {
+
     clearTimeout(updateTimeout);
     updateTimeout = setTimeout(() => {
         if (updateAjaxRequest) {
@@ -732,6 +733,34 @@ function applyDiscount(id, dsct, price) {
               }
           });
         }
+    }
+
+
+    function returnBack(id){
+      if (confirm("Are you sure you want to undo the changes?")) {
+        $.ajax({
+            url: 'backend/return_undo.php',
+            method: 'POST',
+            data: { order_id: id },
+            success: function(resp) {
+                if (resp == 200) {
+                    let paid_amount = parseFloat(document.getElementById('paid_amount').value) || 0;
+                    if (paid_amount !== 0) {
+                        showBalance();
+                    }
+                    let discountValue = document.getElementById('discount_amount').value;
+                    if (discountValue !== "") {
+                        discountBill(discountValue);
+                    } else {
+                        calculateTotal();
+                    }
+                    $('#showCartItems').load('ajax/cart_items.php');
+                } else {
+                    console.error('Update failed:', resp);
+                }
+            }
+        });
+      }
     }
 
     function exchangeItem(orderId) {

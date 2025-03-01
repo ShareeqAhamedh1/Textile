@@ -40,9 +40,9 @@ if ($rs->num_rows > 0) {
                 // Status Badge
                 $statusBadge = '';
                 if ($exchange_st == 0) {
-                    $statusBadge = '<span class="badge bg-warning">Cash Returned</span>';
+                  $statusBadge = '<span class="badge bg-warning" style="cursor:pointer;" onclick="returnBack(\'' . $id . '\')">Cash Returned</span>';
                 } elseif ($exchange_st == 1) {
-                    $statusBadge = '<span class="badge bg-primary">Exchanged</span>';
+                    $statusBadge = '<span class="badge bg-primary" style="cursor:pointer;" onclick="returnBack(\'' . $id . '\')">Exchanged</span>';
                 }
 
                 // Calculate total price before and after discount

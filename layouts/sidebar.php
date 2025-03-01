@@ -18,6 +18,9 @@
 <li class="<?php if($pg_name=='manage_expenses.php'){echo('active');} ?>">
     <a href="manage_expenses.php"><i class="fas fa-money-bill-wave"></i><span> Expenses</span></a>
 </li>
+<li class="<?php if($pg_name=='drawer_report.php'){echo('active');} ?>">
+    <a href="drawer_report.php"><i class="fa fa-archive"></i><span> Drawer Report</span></a>
+</li>
 
 
 
@@ -27,6 +30,8 @@
         <li class="<?php if($pg_name=='customers.php'){echo('active');} ?>">
     <a href="customers.php"><i class="fa fa-users"></i><span> Customer Management</span></a>
 </li>
+
+
 
         <?php if($u_id==1){
                   ?>

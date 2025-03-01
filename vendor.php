@@ -1,8 +1,8 @@
-<?php 
+<?php
 
-include './backend/conn.php'; 
+include './backend/conn.php';
 $u_id = $_SESSION['u_id'];
-include './layouts/sidebar.php'; 
+include './layouts/sidebar.php';
 ?>
 <?php
 if (!isset($_SESSION['user_logged'])) {
@@ -175,7 +175,7 @@ if (!isset($_SESSION['user_logged'])) {
                         <h5 class="card-title fw-bold text-primary mt-4">Search Products</h5>
                         <div class="search-section">
                             <div class="input-group input-group-lg">
-                                <input type="text" class="form-control" id="search_name" 
+                                <input type="text" class="form-control" id="search_name"
                                        placeholder="🔍 Search products..." autofocus oninput="searchProd()">
                             </div>
                             <div id="searchResults" class="search-results-container mt-2"></div>
@@ -207,7 +207,7 @@ if (!isset($_SESSION['user_logged'])) {
                                 </tbody>
                                 <tfoot>
                                     <tr class="table-active">
-                                        <td colspan="3" class="text-end fw-bold">Grand Total:</td>
+                                        <td colspan="4" class="text-end fw-bold">Grand Total:</td>
                                         <td id="grandTotal">Rs 0.00</td>
                                         <td colspan="2">
                                             <button class="btn btn-sm btn-primary" onclick="printAllBarcodes()">Print All Barcodes</button>
@@ -230,13 +230,14 @@ if (!isset($_SESSION['user_logged'])) {
     </div> <!-- End content -->
 </div> <!-- End page-wrapper -->
 
+
 <script>
 let purchaseItems = [];
 
 function searchProd() {
     const searchTerm = document.getElementById('search_name').value.trim();
     const resultsContainer = document.getElementById('searchResults');
-    
+
     if (searchTerm.length > 1) {
         fetch(`select_vendor_table.php?word=${encodeURIComponent(searchTerm)}`)
             .then(response => response.text())
@@ -249,9 +250,9 @@ function searchProd() {
     }
 }
 
-function addToPurchase(productId, productName, price, selling_price, vendorName, vendorId, image = '') {
+function addToPurchase(productId, productName, price, selling_price, vendorName, vendorId, barcode_p) {
     const selectedVendor = document.getElementById('vendor_id').value;
-    
+
     if (!selectedVendor) {
         document.getElementById('vendor_id').value = vendorId;
     } else if (selectedVendor != vendorId) {
@@ -260,7 +261,7 @@ function addToPurchase(productId, productName, price, selling_price, vendorName,
     }
 
     const existingItem = purchaseItems.find(item => item.id === productId);
-    
+
     if (!existingItem) {
         purchaseItems.push({
             id: productId,
@@ -268,14 +269,14 @@ function addToPurchase(productId, productName, price, selling_price, vendorName,
             price: parseFloat(price),
             quantity: 1,
             vendor: vendorName,
-            image: image,
+            barcode: barcode_p,
             selling_price: selling_price,
             prints: 1  // Default to 1 print
         });
     } else {
         existingItem.quantity++;
     }
-    
+
     updatePurchaseTable();
     document.getElementById('search_name').value = '';
     document.getElementById('searchResults').style.display = 'none';
@@ -287,7 +288,9 @@ function updatePurchaseTable() {
     let grandTotal = 0;
 
     purchaseItems.forEach((item, index) => {
-        const total = item.price * item.quantity;
+        const price = parseFloat(item.price) || 0; // Ensure it's a number
+        const sellingPrice = parseFloat(item.selling_price) || 0; // Ensure it's a number
+        const total = price * item.quantity;
         grandTotal += total;
 
         tbody.innerHTML += `
@@ -297,11 +300,12 @@ function updatePurchaseTable() {
                         <div>
                             <div class="fw-bold">${item.name}</div>
                             <small class="text-muted">${item.vendor}</small>
+                            <div class="text-muted">${item.barcode}</div>
                         </div>
                     </div>
                 </td>
-                <td>Rs ${item.price.toFixed(2)}</td>
-                <td>Rs ${item.selling_price.toFixed(2)}</td>
+                <td>Rs ${price.toFixed(2)}</td>
+                <td>Rs ${sellingPrice.toFixed(2)}</td>
                 <td>
                     <input type="number" class="form-control form-control-sm" value="${item.quantity}" onchange="updateQuantity(${index}, event)">
                 </td>
@@ -316,6 +320,7 @@ function updatePurchaseTable() {
 
     document.getElementById('grandTotal').textContent = `Rs ${grandTotal.toFixed(2)}`;
 }
+
 
 function updateQuantity(index, event) {
     const value = event.target.value;
@@ -343,7 +348,7 @@ function printAllBarcodes() {
 function submitPurchase() {
     const vendorId = document.getElementById('vendor_id').value;
     const purchaseDate = document.getElementById('purchase_date').value;
-    
+
     if (!vendorId) {
         alert('Please select a vendor');
         return;
@@ -382,5 +387,29 @@ function submitPurchase() {
 
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("search_name"); // Ensure your input has this ID
+    searchInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            let firstItem = document.querySelector("#searchResults .first-result");
+            if (firstItem) {
+                let id = firstItem.getAttribute("data-id");
+                let name = firstItem.getAttribute("data-name");
+                let costPrice = firstItem.getAttribute("data-cost_price");
+                let price = firstItem.getAttribute("data-price");
+                let vendor = firstItem.getAttribute("data-vendor");
+                let vendorId = firstItem.getAttribute("data-vendor_id");
+                let barcode = firstItem.getAttribute("data-barcode");
+                let hsCode = firstItem.getAttribute("data-hs_code");
+                let grmRef = firstItem.getAttribute("data-grm_ref");
+
+                addToPurchase(id, name, costPrice, price, vendor, vendorId, barcode, hsCode, grmRef);
+            }
+        }
+    });
+});
+</script>
 </body>
 </html>
