@@ -313,7 +313,8 @@ function updatePurchaseTable() {
                 <td>
                     <input type="number" class="form-control form-control-sm" value="${item.prints}" onchange="updatePrints(${index}, event)">
                 </td>
-                <td><button class="btn btn-sm btn-danger" onclick="removeItem(${index})">Remove</button></td>
+                <td><button class="btn btn-sm btn-danger" onclick="removeItem(${index})">Remove</button>
+                    <button class="btn btn-sm btn-warning" onclick="printBarcode(${item.id})">Print barcode</button></td>
             </tr>
         `;
     });
@@ -410,6 +411,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+
+function printBarcode(productId) {
+    var printWindow = window.open('print_barcode3.php?id=' + productId, '_blank');
+    printWindow.focus();
+}
 </script>
 </body>
 </html>

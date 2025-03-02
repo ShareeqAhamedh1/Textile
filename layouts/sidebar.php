@@ -7,6 +7,10 @@
           <a href="index.php" ><img src="assets/img/icons/dashboard.svg" alt="img"><span> Dashboard</span> </a>
         </li>
 
+        <li class="<?php if($pg_name=='productlist.php'){echo('active');} ?>" >
+          <a href="productlist.php" ><i class="fa fa-desktop"></i><span> View Product</span> </a>
+        </li>
+
 
 
         <li class="<?php if($pg_name=='pos.php'){echo('active');} ?>" >
