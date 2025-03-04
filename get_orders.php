@@ -37,48 +37,95 @@ if ($rs->num_rows > 0) {
     <?= htmlspecialchars(getPayment($row['payment_type'])) ?>
 </td>
 
+<?php
 
-            <?php
-            $total =0;
-            $totDiscount=0;
-            // Calculate Discounted Total in a Single Query
-            $sqlS = "SELECT * FROM tbl_order
-                     WHERE grm_ref='$ref'";
+    $total         = 0;
+    $returnedValue = 0;
+    $totDiscount   = 0;
 
-            $rsS = $conn->query($sqlS);
-            if($rsS->num_rows > 0){
-              while($rowS=$rsS->fetch_assoc()){
-                $id= $rowS['id'];
-              $pid = $rowS['product_id'];
-              $qty = $rowS['quantity'];
-              $discount = $rowS['discount'];
+    $sqlS = "SELECT * FROM tbl_order WHERE grm_ref='$ref'";
+    $rsS  = $conn->query($sqlS);
 
-              $priceP = getDataBack($conn,'tbl_product','id',$pid,'price');
-              $sqlReturn ="SELECT * FROM tbl_return_exchange WHERE or_id='$id'";
-              $rsReturn = $conn->query($sqlReturn);
-              if($rsReturn->num_rows == 0){
-                $total +=$priceP * $qty;
-              }
-              $totDiscount +=$discount;
+    if ($rsS && $rsS->num_rows > 0) {
+        while ($rowS = $rsS->fetch_assoc()) {
+            $id       = $rowS['id'];
+            $pid      = $rowS['product_id'];
+            $qty      = $rowS['quantity'];
+            $discount = $rowS['discount'];
+            $priceP   = getDataBack($conn, 'tbl_product', 'id', $pid, 'price');
+
+            $linePrice = $priceP * $qty;
+
+            $sqlReturn = "SELECT * FROM tbl_return_exchange WHERE or_id = '$id'";
+            $rsReturn  = $conn->query($sqlReturn);
+
+            if ($rsReturn && $rsReturn->num_rows > 0) {
+                $returnedValue += $linePrice;
+            } else {
+                $total += $linePrice;
             }
-            }
-            $totDiscount +=$row['discount_price'];
-            ?>
-            <td>
-    <?php if ($totDiscount > 0): ?>
-        <div class="fw-bold text-primary" style="font-size: 1rem;">
-            LKR <?= number_format($total - $totDiscount, 2) ?> <!-- Final Price -->
+
+            $totDiscount += $discount;
+        }
+    }
+
+    $totDiscount += $row['discount_price'];
+
+    $billValue = $total - $totDiscount;
+    if ($billValue < 0) {
+        $billValue = 0; // prevent negative if discounts exceed total
+    }
+
+    $cashPaid = 0;
+    $refund   = 0;
+
+    if ($billValue > $returnedValue) {
+        $cashPaid = $billValue - $returnedValue;
+    } elseif ($returnedValue > $billValue) {
+        $refund = $returnedValue - $billValue;
+    }
+?>
+
+<td>
+    <div>
+        <strong>Total Bill Value:</strong>
+        LKR <?= number_format($billValue, 2) ?>
+    </div>
+
+    <?php if ($returnedValue > 0): ?>
+        <div>
+            <strong>Returned Item Value:</strong>
+            LKR <?= number_format($returnedValue, 2) ?>
         </div>
-        <div class="text-muted" style="font-size: 0.9rem;">
-            <s>LKR <?= number_format($total, 2) ?></s> <!-- Before Discount -->
-            <span class="text-success ms-2">(-LKR <?= number_format($totDiscount, 2) ?> Discount)</span>
+    <?php endif; ?>
+
+    <?php if ($totDiscount > 0): ?>
+        <div>
+            <strong>Discount Applied:</strong>
+            LKR <?= number_format($totDiscount, 2) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($cashPaid > 0): ?>
+        <div>
+            <strong>Cash Paid By Customer:</strong>
+            LKR <?= number_format($cashPaid, 2) ?>
+        </div>
+    <?php elseif ($refund > 0): ?>
+        <div>
+            <strong>Refund to Customer:</strong>
+            LKR <?= number_format($refund, 2) ?>
         </div>
     <?php else: ?>
-        <div class="fw-bold text-primary" style="font-size: 1.2rem;">
-            LKR <?= number_format($total, 2) ?> <!-- Normal price when no discount -->
+        <div>
+            <strong>Cash Paid / Refund:</strong> LKR 0.00
         </div>
     <?php endif; ?>
 </td>
+
+
+
+
 
 
             <td>

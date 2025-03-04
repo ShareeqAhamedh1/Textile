@@ -3,95 +3,58 @@ include 'layouts/header.php';
 include 'layouts/sidebar.php';
 
 // Initialize variables
-$total_daily = 0;
-$total_monthly = 0;
-$total_petty_cash = 0;
+$opening_balance_display = 0;
+$currDate=date('Y-m-d');
+// Fetch yesterday's closing balance as today's opening balance
+$sql_opening_balance = "SELECT * FROM tbl_expenses WHERE expense_date = '$currDate' AND category='Opening Balance'";
+$rs_opening_balance = $conn->query($sql_opening_balance);
+if ($rs_opening_balance->num_rows > 0) {
+    $row = $rs_opening_balance->fetch_assoc();
+    $opening_balance_display = $row['amount'] ?? 0;
+}
 
-// Handle Filters
-// $filter_from = isset($_GET['filter_from']) ? $_GET['filter_from'] : '';
-// $filter_to = isset($_GET['filter_to']) ? $_GET['filter_to'] : '';
-// $filter_date = isset($_GET['filter_date']) ? $_GET['filter_date'] : '';
-// $filter_month = isset($_GET['filter_month']) ? $_GET['filter_month'] : '';
+$total_daily = 0;
+$closing_balance = 0;
+$opening_balance = 0;
+
+// Fetch yesterday's closing balance as today's opening balance
+$sql_opening_balance = "SELECT SUM(amount * (CASE WHEN cash_in_out = 1 THEN 1 ELSE -1 END)) AS closing_balance FROM tbl_expenses WHERE DATE(expense_date) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)";
+$rs_opening_balance = $conn->query($sql_opening_balance);
+if ($rs_opening_balance->num_rows > 0) {
+    $row = $rs_opening_balance->fetch_assoc();
+    $opening_balance = $row['closing_balance'] ?? 0;
+}
 
 // SQL for total expenses today
-$sql_daily = "SELECT SUM(amount) AS total FROM tbl_expenses WHERE DATE(expense_date) = CURDATE()";
+$sql_daily = "SELECT SUM(amount) AS total FROM tbl_expenses WHERE DATE(expense_date) = CURDATE() AND cash_in_out=2";
 $rs_daily = $conn->query($sql_daily);
 $total_daily = ($rs_daily->num_rows > 0) ? $rs_daily->fetch_assoc()['total'] : 0;
 
-// SQL for total expenses this month
-$sql_monthly = "SELECT SUM(amount) AS total FROM tbl_expenses WHERE MONTH(expense_date) = MONTH(CURDATE()) AND YEAR(expense_date) = YEAR(CURDATE())";
-$rs_monthly = $conn->query($sql_monthly);
-$total_monthly = ($rs_monthly->num_rows > 0) ? $rs_monthly->fetch_assoc()['total'] : 0;
-
-// Fetch Expenses with Vendor Name
-// Initialize filter variables
-$filter_from = isset($_GET['filter_from']) ? $_GET['filter_from'] : '';
-$filter_to = isset($_GET['filter_to']) ? $_GET['filter_to'] : '';
-$filter_month = isset($_GET['filter_month']) ? $_GET['filter_month'] : '';
-
-// Build SQL query for fetching expenses
-$sql_expenses = "SELECT e.*, v.vendor_name
-                 FROM tbl_expenses e
-                 LEFT JOIN tbl_vendors v ON e.vendor_id = v.vendor_id
-                 WHERE 1"; // Using WHERE 1 for easier filtering
-
-// Apply date range filter if set
-if ($filter_from && $filter_to) {
-    $sql_expenses .= " AND e.expense_date BETWEEN '$filter_from' AND '$filter_to'";
-} elseif ($filter_from) {
-    $sql_expenses .= " AND e.expense_date >= '$filter_from'";
-} elseif ($filter_to) {
-    $sql_expenses .= " AND e.expense_date <= '$filter_to'";
-}
-
-// Apply month filter if set
-if ($filter_month) {
-    $month = date('m', strtotime($filter_month));
-    $year = date('Y', strtotime($filter_month));
-    $sql_expenses .= " AND MONTH(e.expense_date) = '$month' AND YEAR(e.expense_date) = '$year'";
-}
-
-$sql_expenses .= " ORDER BY e.expense_date DESC";
+// Fetch today's expenses only
+$sql_expenses = "SELECT e.*, v.vendor_name, e.cash_in_out FROM tbl_expenses e LEFT JOIN tbl_vendors v ON e.vendor_id = v.vendor_id WHERE DATE(e.expense_date) = CURDATE() ORDER BY e.expense_date DESC";
 $rs_expenses = $conn->query($sql_expenses);
-// Apply Filters
-// $conditions = [];
 
-// if ($filter_from && $filter_to) {
-//     $conditions[] = "e.expense_date BETWEEN '$filter_from' AND '$filter_to'";
-// } elseif ($filter_from) {
-//     $conditions[] = "e.expense_date >= '$filter_from'";
-// } elseif ($filter_to) {
-//     $conditions[] = "e.expense_date <= '$filter_to'";
-// }
-
-// // Filter by specific date
-// if ($filter_date) {
-//     $conditions[] = "DATE(e.expense_date) = '$filter_date'";
-// }
-
-// // Filter by specific month
-// if ($filter_month) {
-//     $conditions[] = "MONTH(e.expense_date) = MONTH('$filter_month') AND YEAR(e.expense_date) = YEAR('$filter_month')";
-// }
-
-// // Append conditions to SQL query
-// if (!empty($conditions)) {
-//     $sql_expenses .= " WHERE " . implode(" AND ", $conditions);
-// }
-
-// $sql_expenses .= " ORDER BY e.expense_date DESC";
-// $rs_expenses = $conn->query($sql_expenses);
+// Calculate closing balance
+$closing_balance = $opening_balance;
+if ($rs_expenses->num_rows > 0) {
+    while ($row = $rs_expenses->fetch_assoc()) {
+        if ($row['cash_in_out'] == 1) {
+            $closing_balance += $row['amount'];
+        } elseif ($row['cash_in_out'] == 2) {
+            $closing_balance -= $row['amount'];
+        }
+    }
+}
 ?>
 
 <div class="page-wrapper">
     <div class="content">
-        <!-- Dashboard Summary -->
         <div class="row">
             <div class="col-md-6">
                 <div class="card text-white bg-primary">
                     <div class="card-body text-center">
-                        <h5 class="card-title">Total Daily Expenses</h5>
-                        <h3>Rs. <?= number_format($total_daily, 2) ?>/-</h3>
+                        <h5 class="card-title">Opening Balance</h5>
+                        <h3>Rs. <?= number_format($opening_balance_display, 2) ?>/-</h3>
                     </div>
                 </div>
             </div>
@@ -99,88 +62,86 @@ $rs_expenses = $conn->query($sql_expenses);
             <div class="col-md-6">
                 <div class="card text-white bg-success">
                     <div class="card-body text-center">
-                        <h5 class="card-title">Total Monthly Expenses</h5>
-                        <h3>Rs. <?= number_format($total_monthly, 2) ?>/-</h3>
+                        <h5 class="card-title">Total Daily Expenses</h5>
+                        <h3>Rs. <?= number_format($total_daily, 2) ?>/-</h3>
                     </div>
                 </div>
             </div>
         </div>
-         <!-- Add Expense Form -->
-         <div class="row mt-4">
-            <div class="col-lg-6 mx-auto">
-                <div class="card shadow">
-                    <div class="card-header bg-dark text-white">
-                        <h4 class="mb-0">Add New Expense</h4>
+
+        <div class="row mt-4">
+    <div class="col-lg-6 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">Add New Expense</h4>
+            </div>
+            <div class="card-body">
+                <form action="backend/addExpence.php" method="POST">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount</label>
+                        <input type="number" name="amount" class="form-control" required step="0.01">
                     </div>
-                    <div class="card-body">
-                        <form action="backend/addExpence.php" method="POST">
-                            <div class="mb-3">
-                                <label for="amount" class="form-label">Amount</label>
-                                <input type="number" name="amount" class="form-control" required step="0.01">
-                            </div>
-                            <div class="mb-3">
-                                <label for="category" class="form-label">Category</label>
-                                <select name="category" id="category" class="form-control" onchange="updateDescription(this.value)" required>
-                                    <option value="">Select Type</option>
-                                    <option value="Opening Balance">Opening Balance</option>
-                                    <option value="petty_cash">Petty Cash</option>
-                                    <option value="vendor">Vendor</option> <!-- Added Vendor option -->
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="description" class="form-label">Description</label>
-                                <input type="text" name="description" id="description_petty" class="form-control" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="category" class="form-label">Cash IN/OUT</label>
-                                <select name="cash_in_out" id="cash_in_out" class="form-control" required>
-                                  <option value="2">CASH OUT</option> <!-- Added Vendor option -->
-                                    <option value="1">CASH IN</option>
-                                </select>
-                            </div>
-
-                            <!-- Vendor Dropdown -->
-                           <!-- Vendor Dropdown -->
-<div class="mb-3" id="vendorDropdown" style="display:none;">
-    <label for="vendor_id" class="form-label">Select Vendor</label>
-    <select name="vendor_id" id="vendor_id" class="form-control">
-        <?php
-        // Fetch all vendors
-        $sql_vendors = "SELECT * FROM tbl_vendors";
-        $result_vendors = $conn->query($sql_vendors);
-        if ($result_vendors->num_rows > 0) {
-            while ($vendor = $result_vendors->fetch_assoc()) {
-                echo "<option value='" . $vendor['vendor_id'] . "'>" . $vendor['vendor_name'] . "</option>";
-            }
-        } else {
-            echo "<option value=''>No Vendors Available</option>";
-        }
-        ?>
-    </select>
-</div>
-
-<!-- Payment Type Dropdown (Visible only when Vendor is selected) -->
-<div class="mb-3" id="paymentTypeDropdown" style="display:none;">
-    <label for="payment_type" class="form-label">Select Payment Type</label>
-    <select name="payment_type" id="payment_type" class="form-control">
-        <option value="">-- Select Payment Type --</option>
-        <option value="cash">Cash</option>
-        <option value="onlinePayment">Online Payment</option>
-    </select>
-</div>
-
-
-                            <div class="mb-3">
-                                <label for="expense_date" class="form-label">Expense Date</label>
-                                <input type="date" name="expense_date" value=<?= date('Y-m-d') ?> class="form-control" required>
-                            </div>
-                            <button type="submit" class="btn btn-success w-100">Add Expense</button>
-                        </form>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select name="category" id="category" class="form-control" onchange="updateCashInOut(this.value)" required>
+                            <option value="">Select Type</option>
+                            <option value="Opening Balance">Opening Balance</option>
+                            <option value="petty_cash">Petty Cash</option>
+                            <option value="vendor">Vendor</option>
+                        </select>
                     </div>
-                </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <input type="text" name="description" id="description_petty" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="cash_in_out" class="form-label">Cash IN/OUT</label>
+                        <select name="cash_in_out" id="cash_in_out" class="form-control" required>
+                            <option value="2">CASH OUT</option>
+                            <option value="1">CASH IN</option>
+                        </select>
+                    </div>
+
+                    <!-- Vendor Dropdown -->
+                    <div class="mb-3" id="vendorDropdown" style="display:none;">
+                        <label for="vendor_id" class="form-label">Select Vendor</label>
+                        <select name="vendor_id" id="vendor_id" class="form-control">
+                            <?php
+                            // Fetch all vendors
+                            $sql_vendors = "SELECT * FROM tbl_vendors";
+                            $result_vendors = $conn->query($sql_vendors);
+                            if ($result_vendors->num_rows > 0) {
+                                while ($vendor = $result_vendors->fetch_assoc()) {
+                                    echo "<option value='" . $vendor['vendor_id'] . "'>" . $vendor['vendor_name'] . "</option>";
+                                }
+                            } else {
+                                echo "<option value=''>No Vendors Available</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+
+                    <!-- Payment Type Dropdown -->
+                    <div class="mb-3" id="paymentTypeDropdown" style="display:none;">
+                        <label for="payment_type" class="form-label">Select Payment Type</label>
+                        <select name="payment_type" id="payment_type" class="form-control">
+                            <option value="">-- Select Payment Type --</option>
+                            <option value="cash">Cash</option>
+                            <option value="onlinePayment">Online Payment</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="expense_date" class="form-label">Expense Date</label>
+                        <input type="date" name="expense_date" value="<?= date('Y-m-d') ?>" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Add Expense</button>
+                </form>
             </div>
         </div>
+    </div>
+</div>
 
 
         <!-- Filter by Date or Month -->
@@ -202,89 +163,66 @@ $rs_expenses = $conn->query($sql_expenses);
         <button id="clearFilter" class="btn btn-secondary">Reset</button>
     </div>
 </div>
-
         <!-- Expense List -->
         <div class="row mt-4">
             <div class="col-lg-12">
                 <div class="card shadow">
                     <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">All Expenses</h4>
+                        <h4 class="mb-0">Today's Expenses</h4>
                     </div>
                     <div class="card-body">
-                      <table class="table table-bordered table-hover table-striped">
-    <thead>
-        <tr>
-            <th>Amount</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Date</th>
-            <th>Vendor</th>
-            <th>Type</th> <!-- New column for Cash In/Out -->
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody id="expenseTable">
-        <?php
-            $closing_balance = 0; // Initialize closing balance
-
-            if ($rs_expenses->num_rows > 0):
-                while ($rows = $rs_expenses->fetch_assoc()):
-                    // Update closing balance
-                    if ($rows['cash_in_out'] == 1) {
-                        $closing_balance += $rows['amount']; // CASH IN adds to balance
-                    } elseif ($rows['cash_in_out'] == 2) {
-                        $closing_balance -= $rows['amount']; // CASH OUT subtracts from balance
-                    }
-        ?>
-        <tr id="row-<?= $rows['expense_id'] ?>">
-            <td>Rs. <?= number_format($rows['amount'], 2) ?></td>
-            <td><?= htmlspecialchars($rows['description'], ENT_QUOTES) ?></td>
-            <td><span class="badge bg-info"><?= ucfirst($rows['category']) ?></span></td>
-            <td><?= date('Y-m-d', strtotime($rows['expense_date'])) ?></td>
-            <td><?= ($rows['category'] == 'vendor' && $rows['vendor_name']) ? $rows['vendor_name'] : "-" ?></td>
-            <td>
-                <?php if ($rows['cash_in_out'] == 1): ?>
-                    <span class="badge bg-success">CASH IN</span>
-                <?php elseif ($rows['cash_in_out'] == 2): ?>
-                    <span class="badge bg-danger">CASH OUT</span>
-                <?php else: ?>
-                    <span class="badge bg-secondary">UNKNOWN</span>
-                <?php endif; ?>
-            </td>
-            <td>
-                <button class="btn btn-warning btn-sm editExpenseBtn"
-                    data-id="<?= $rows['expense_id'] ?>"
-                    data-amount="<?= $rows['amount'] ?>"
-                    data-description="<?= htmlspecialchars($rows['description'], ENT_QUOTES) ?>"
-                    data-category="<?= $rows['category'] ?>"
-                    data-date="<?= date('Y-m-d', strtotime($rows['expense_date'])) ?>"
-                    data-vendor="<?= $rows['vendor_name'] ?>">
-                    Edit
-                </button>
-            </td>
-        </tr>
-        <?php endwhile; ?>
-        <?php else: ?>
-        <tr>
-            <td colspan="7" class="text-center">No records found.</td>
-        </tr>
-        <?php endif; ?>
-    </tbody>
-    <tfoot>
-        <tr class="table-primary">
-            <td colspan="6" class="text-end"><strong>Closing Balance:</strong></td>
-            <td><strong>Rs. <?= number_format($closing_balance, 2) ?></strong></td>
-        </tr>
-    </tfoot>
-</table>
-
-
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Amount</th>
+                                    <th>Description</th>
+                                    <th>Category</th>
+                                    <th>Date</th>
+                                    <th>Vendor</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $rs_expenses->data_seek(0); // Reset pointer to fetch again ?>
+                                <?php if ($rs_expenses->num_rows > 0): ?>
+                                    <?php while ($rows = $rs_expenses->fetch_assoc()): ?>
+                                        <tr>
+                                            <td>Rs. <?= number_format($rows['amount'], 2) ?></td>
+                                            <td><?= htmlspecialchars($rows['description'], ENT_QUOTES) ?></td>
+                                            <td><span class="badge bg-info"> <?= ucfirst($rows['category']) ?></span></td>
+                                            <td><?= date('Y-m-d', strtotime($rows['expense_date'])) ?></td>
+                                            <td><?= ($rows['category'] == 'vendor' && $rows['vendor_name']) ? $rows['vendor_name'] : "-" ?></td>
+                                            <td>
+                                                <?php if ($rows['cash_in_out'] == 1): ?>
+                                                    <span class="badge bg-success">CASH IN</span>
+                                                <?php elseif ($rows['cash_in_out'] == 2): ?>
+                                                    <span class="badge bg-danger">CASH OUT</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary">UNKNOWN</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="6" class="text-center">No records found.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-primary">
+                                    <td colspan="5" class="text-end"><strong>Closing Balance:</strong></td>
+                                    <td><strong>Rs. <?= number_format($closing_balance, 2) ?></strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 <div class="modal fade" id="editExpenseModal" tabindex="-1" aria-labelledby="editExpenseModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -330,6 +268,7 @@ $rs_expenses = $conn->query($sql_expenses);
 
 
 <?php include 'layouts/footer.php'; ?>
+
 
 <script type="text/javascript">
 $(document).ready(function () {
@@ -486,4 +425,19 @@ document.getElementById("clearFilter").addEventListener("click", function () {
         document.getElementById('description_petty').value = "";
       }
 }
+
+function updateCashInOut(value) {
+    var cashInOutSelect = document.getElementById("cash_in_out");
+    var descriptionInput = document.getElementById("description_petty");
+
+    if (value === "Opening Balance") {
+        cashInOutSelect.value = "1"; // Select CASH IN
+        let todayDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        descriptionInput.value = value + " - " + todayDate; // Use 'value' instead of 'inputValue'
+    } else {
+        cashInOutSelect.value = "2"; // Select CASH OUT
+        descriptionInput.value = ""; // Clear description for other categories
+    }
+}
+
 </script>

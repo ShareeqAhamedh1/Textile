@@ -7,14 +7,14 @@
           <a href="index.php" ><img src="assets/img/icons/dashboard.svg" alt="img"><span> Dashboard</span> </a>
         </li>
 
-        <li class="<?php if($pg_name=='productlist.php'){echo('active');} ?>" >
-          <a href="productlist.php" ><i class="fa fa-desktop"></i><span> View Product</span> </a>
-        </li>
-
 
 
         <li class="<?php if($pg_name=='pos.php'){echo('active');} ?>" >
           <a href="pos.php" ><i class="fa fa-desktop"></i><span> POS</span> </a>
+        </li>
+
+        <li class="<?php if($pg_name=='productlist.php'){echo('active');} ?>" >
+          <a href="productlist.php" ><i class="fa fa-desktop"></i><span> View Products</span> </a>
         </li>
         <li class="<?php if($pg_name=='pos_grm.php'){echo('active');} ?>">
     <a href="pos_grm.php"><i class="fas fa-cash-register"></i><span> Bills</span></a>
@@ -22,9 +22,7 @@
 <li class="<?php if($pg_name=='manage_expenses.php'){echo('active');} ?>">
     <a href="manage_expenses.php"><i class="fas fa-money-bill-wave"></i><span> Expenses</span></a>
 </li>
-<li class="<?php if($pg_name=='drawer_report.php'){echo('active');} ?>">
-    <a href="drawer_report.php"><i class="fa fa-archive"></i><span> Drawer Report</span></a>
-</li>
+
 
 
 
@@ -43,7 +41,9 @@
           <a href="sales_report.php" ><img src="assets/img/icons/sale.svg" alt="img"><span> Sales Report</span> </a>
         </li>
 
-
+        <li class="<?php if($pg_name=='drawer_report.php'){echo('active');} ?>">
+    <a href="drawer_report.php"><i class="fa fa-archive"></i><span> Drawer Report</span></a>
+</li>
 
 
 

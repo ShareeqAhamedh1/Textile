@@ -6,6 +6,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $payment_method = $_POST['payment_method'] ?? 1;
     $action = $_POST['action'] ?? '';
     $status = ($action === "complete_bill") ? "1" : "0";
+    $act = $_REQUEST['act'];
 
     if(isset($_SESSION['c_id'])){
       $cid =$_SESSION['c_id'];
@@ -20,7 +21,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($rs > 0) {
       unset($_SESSION['grm_ref']);
       unset($_SESSION['c_id']);
-        echo 200; // Success response
+         if($act == 0){
+           echo $grm_id;
+         }
+         else {
+           echo 200;
+         }
     } else {
         echo 500;
     }
