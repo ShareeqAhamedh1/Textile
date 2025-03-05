@@ -4,6 +4,7 @@ $grm_id = $_SESSION['grm_ref'];
 
 $sql = "SELECT * FROM tbl_order WHERE grm_ref='$grm_id' ORDER BY id DESC";
 $rs = $conn->query($sql);
+  $orderStatus = getDataBack($conn,'tbl_order_grm','id',$grm_id,'order_st');
 
 if ($rs->num_rows > 0) {
     ?>
@@ -59,14 +60,14 @@ if ($rs->num_rows > 0) {
                         <!-- Quantity Input -->
                         <input type="number" value="<?= (int) $qty ?>" min="1"
                                oninput="updateQnty(<?= $id ?>, this.value)"
-                               class="form-control form-control-sm me-2 quantity-input"
+                               class="form-control form-control-sm me-2 quantity-input" <?php if($orderStatus == 1){ echo "disabled"; } ?>
                                style="width: 80px;" />
 
                         <!-- Discount Input -->
                         <input type="text" value="<?= (int) $discount ?>" min="0"
                                onkeydown="if(event.key === 'Enter') applyDiscount(<?= $id ?>, this.value, <?= $beforeDiscount ?>)"
                                class="form-control form-control-sm me-2 discount-input"
-                               placeholder="Discount"
+                               placeholder="Discount" <?php if($orderStatus == 1){ echo "disabled"; } ?>
                                style="width: 90px;" />
 
                         <!-- Price Breakdown -->
@@ -83,16 +84,18 @@ if ($rs->num_rows > 0) {
 
 
                         <!-- Exchange Button -->
-                        <?php if ($exchange_st == -1) { ?>
+                        <?php if ($exchange_st == -1 && $orderStatus != 1) { ?>
                             <button class="btn btn-sm btn-primary me-2" id="exhchangeButton" style="font-size:10px;" onclick="exchangeItem(<?= $id ?>)">
                                 <i class="fas fa-exchange-alt"></i> Cash Return/Exchange
                             </button>
                         <?php } ?>
 
                         <!-- Delete Button -->
+                        <?php if($orderStatus != 1){ ?>
                         <button class="btn btn-sm btn-danger" onclick="del_item_cart(<?= $id ?>)">
                             <i class="fas fa-trash-alt"></i>
                         </button>
+                      <?php } ?>
                     </div>
                 </div>
             <?php } ?>

@@ -6,7 +6,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $payment_method = $_POST['payment_method'] ?? 1;
     $action = $_POST['action'] ?? '';
     $status = ($action === "complete_bill") ? "1" : "0";
-    $act = $_REQUEST['act'];
+
+    if(isset($_REQUEST['act'])){
+      $act =$_REQUEST['act'];
+    }
+    else {
+      $act =1;
+    }
 
     if(isset($_SESSION['c_id'])){
       $cid =$_SESSION['c_id'];

@@ -2,32 +2,37 @@
 include 'layouts/header.php';
 include 'layouts/sidebar.php';
 
-
-
 $u_id = $_SESSION['u_id'];
 
-// Pagination Variables
+// -------------------------------------------------------------------------------------
+// 1) Pagination Setup (no JOIN used here)
+// -------------------------------------------------------------------------------------
 $limit  = 5; // Products per page
-$page   = isset($_GET['page']) ? $_GET['page'] : 1;
+$page   = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) {
+    $page = 1;
+}
 $offset = ($page - 1) * $limit;
 
-// Get Total Products Count
+// Get total products count
 $sql_count = "SELECT COUNT(*) AS total FROM tbl_product";
 $result_count = $conn->query($sql_count);
 $row_count = $result_count->fetch_assoc();
-$total_records = $row_count['total'];
-$total_pages   = ceil($total_records / $limit);
+$total_records = (int)$row_count['total'];
+$total_pages   = ($total_records > 0) ? ceil($total_records / $limit) : 1;
 
-// Fetch Products with Pagination
+// Fetch recent products (no JOIN)
 $sql = "SELECT name AS product_name, price
         FROM tbl_product
         ORDER BY id DESC
         LIMIT $offset, $limit";
 $rs = $conn->query($sql);
 
-// 1) Calculate Total Stock Value (minus returns)
+// -------------------------------------------------------------------------------------
+// 2) Calculate Total Stock Value (minus returns) using existing helper functions
+//    - Calls currentStockCount($conn, $p_id) and getReturnValue($conn, $p_id)
+// -------------------------------------------------------------------------------------
 $stock_value = 0;
-
 $sql_products = "SELECT id, price FROM tbl_product";
 $rs_prod = $conn->query($sql_products);
 while ($rowProd = $rs_prod->fetch_assoc()) {
@@ -37,31 +42,37 @@ while ($rowProd = $rs_prod->fetch_assoc()) {
     // Normal stock calculation
     $stock_value += $price * currentStockCount($conn, $p_id);
 
-    // Subtract the total monetary value of any returned items
-    // for *that* product
+    // Subtract return value for that product
     $returnValue = getReturnValue($conn, $p_id);
     $stock_value -= $returnValue;
 }
 
-// 2) Calculate Total Product Cost (minus returns)
+// -------------------------------------------------------------------------------------
+// 3) Calculate Total Product Cost (minus returns)
+//    - Removes the LEFT JOIN; sums expiry-date quantities in a separate query.
+// -------------------------------------------------------------------------------------
 $total_cost_price = 0;
-$sql_total_cost = "
-    SELECT p.id, p.cost_price,
-           COALESCE(SUM(e.quantity), 0) AS total_quantity
-    FROM tbl_product p
-    LEFT JOIN tbl_expiry_date e ON p.id = e.product_id
-    GROUP BY p.id, p.cost_price
-";
-$rs_total_cost = $conn->query($sql_total_cost);
-while ($row = $rs_total_cost->fetch_assoc()) {
-    $p_id       = $row['id'];
-    $cost_price = $row['cost_price'];
-    $qty        = $row['total_quantity'];
+
+// First, get all products
+$sql_total_cost_products = "SELECT id, cost_price FROM tbl_product";
+$res_total_cost_products = $conn->query($sql_total_cost_products);
+
+while ($prod = $res_total_cost_products->fetch_assoc()) {
+    $p_id       = $prod['id'];
+    $cost_price = (float)$prod['cost_price'];
+
+    // Sum total quantity from tbl_expiry_date for this product (no join)
+    $sql_qty = "SELECT COALESCE(SUM(quantity), 0) AS total_quantity
+                FROM tbl_expiry_date
+                WHERE product_id = '$p_id'";
+    $res_qty = $conn->query($sql_qty);
+    $row_qty = $res_qty->fetch_assoc();
+    $qty = (int)($row_qty['total_quantity']);
 
     // Total cost ignoring returns
     $productCost = $cost_price * $qty;
 
-    // Subtract cost of returned items
+    // Subtract cost of returned items using existing function
     $returnedCost = getReturnCost($conn, $p_id);
     $productCost -= $returnedCost;
     if ($productCost < 0) {
@@ -71,46 +82,58 @@ while ($row = $rs_total_cost->fetch_assoc()) {
     $total_cost_price += $productCost;
 }
 
-// 3) Total Sales Value (minus returns + discount)
-//    Instead of net_quantity approach in the query, we do raw sales - returns.
-$tot_bill_dis = 0;
-// First: sum up raw (quantity * price) from all orders
-// plus item discount, bill discount
-$sql_sales = "
-    SELECT
-        o.id,
-        o.grm_ref,
-        o.product_id,
-        o.quantity,
-        o.discount AS item_discount,
-        p.price,
-        g.discount_price AS bill_discount
-    FROM tbl_order o
-    JOIN tbl_product p ON o.product_id = p.id
-    JOIN tbl_order_grm g ON o.grm_ref = g.id
-";
-$rs_sales = $conn->query($sql_sales);
-$order_data   = [];
-$processedRef = [];
+// -------------------------------------------------------------------------------------
+// 4) Calculate Total Sales Value (minus returns + discount)
+//    - We'll do: sum up orders separately, sum returns separately, and subtract
+// -------------------------------------------------------------------------------------
+$rawSalesTotal = 0;
+$totalItemDisc = 0;
+$totalBillDisc = 0;
 
-while ($rowSale = $rs_sales->fetch_assoc()) {
-    $grm_ref      = $rowSale['grm_ref'];
-    $qty          = $rowSale['quantity'];
-    $price        = $rowSale['price'];
-    $item_discount= $rowSale['item_discount'];
-    $bill_discount= $rowSale['bill_discount'];
+// We’ll gather all orders first (no JOIN)
+$order_data = [];   // key = grm_ref
+$processedRef = []; // track if we've added the bill discount for a ref
 
+// 4A) Fetch all orders from tbl_order
+$sql_orders_all = "SELECT * FROM tbl_order";
+$res_orders_all = $conn->query($sql_orders_all);
+
+// 4B) For each order, get the product price + the order_grm discount
+while ($ord = $res_orders_all->fetch_assoc()) {
+    $oid       = $ord['id'];
+    $grm_ref   = $ord['grm_ref'];
+    $p_id      = $ord['product_id'];
+    $qty       = (int)$ord['quantity'];
+    $item_disc = (float)$ord['discount'];
+
+    // Get product price (no join)
+    $sql_p = "SELECT price FROM tbl_product WHERE id = '$p_id'";
+    $res_p = $conn->query($sql_p);
+    $row_p = $res_p->fetch_assoc();
+    $price = ($row_p) ? (float)$row_p['price'] : 0;
+
+    // Get order_grm row (no join)
+    $sql_g = "SELECT discount_price FROM tbl_order_grm WHERE id = '$grm_ref'";
+    $res_g = $conn->query($sql_g);
+    $row_g = $res_g->fetch_assoc();
+    $bill_discount = $row_g ? (float)$row_g['discount_price'] : 0;
+
+    // Initialize order_data if needed
     if (!isset($order_data[$grm_ref])) {
         $order_data[$grm_ref] = [
-            'gross_value' => 0,  // sum of price*quantity for that ref
+            'gross_value' => 0,
             'item_discount' => 0,
             'bill_discount' => 0
         ];
     }
-    $order_data[$grm_ref]['gross_value']    += ($qty * $price);
-    $order_data[$grm_ref]['item_discount']  += $item_discount;
 
-    // Only add bill discount once per ref
+    // Add raw (price * quantity)
+    $order_data[$grm_ref]['gross_value'] += ($price * $qty);
+
+    // Add item discount
+    $order_data[$grm_ref]['item_discount'] += $item_disc;
+
+    // Add bill discount once per ref
     if (!isset($processedRef[$grm_ref])) {
         $order_data[$grm_ref]['bill_discount'] += $bill_discount;
         $processedRef[$grm_ref] = true;
@@ -118,69 +141,86 @@ while ($rowSale = $rs_sales->fetch_assoc()) {
 }
 
 // Summation: raw sales minus total discounts
-$rawSalesTotal   = 0;
-$totalItemDisc   = 0;
-$totalBillDisc   = 0;
-
 foreach ($order_data as $ref => $vals) {
     $rawSalesTotal += $vals['gross_value'];
     $totalItemDisc += $vals['item_discount'];
     $totalBillDisc += $vals['bill_discount'];
 }
 
-// Now rawSalesTotal = sum( price*qty ) of all orders
-// totalItemDisc, totalBillDisc are the sum of all discounts
-
-// Next: get the sum of *all* returned items across all orders
-$sql_return_all = "
-    SELECT SUM(t_o.quantity * p.price) AS totalReturns
-    FROM tbl_return_exchange t_re
-    JOIN tbl_order t_o ON t_o.id = t_re.or_id
-    JOIN tbl_product p ON p.id = t_o.product_id
-";
-$rs_ret_all = $conn->query($sql_return_all);
+// Next: get total returns (no join)
 $totalReturns = 0;
-if ($rs_ret_all && $rs_ret_all->num_rows > 0) {
-    $rowRetAll = $rs_ret_all->fetch_assoc();
-    $totalReturns = $rowRetAll['totalReturns'] ?: 0;
+$sql_return_all = "SELECT * FROM tbl_return_exchange";
+$rs_ret_all = $conn->query($sql_return_all);
+
+while ($retRow = $rs_ret_all->fetch_assoc()) {
+    // retRow[ 'or_id' ] => find that order
+    $or_id = $retRow['or_id'];
+    $sql_o = "SELECT product_id, quantity FROM tbl_order WHERE id = '$or_id'";
+    $res_o = $conn->query($sql_o);
+    $row_o = $res_o->fetch_assoc();
+    if (!$row_o) continue;
+
+    $p_id = $row_o['product_id'];
+    $qty  = (int)$row_o['quantity'];
+
+    // find product price
+    $sql_p = "SELECT price FROM tbl_product WHERE id = '$p_id'";
+    $res_p = $conn->query($sql_p);
+    $row_p = $res_p->fetch_assoc();
+    $price = ($row_p) ? (float)$row_p['price'] : 0;
+
+    $totalReturns += ($price * $qty);
 }
 
-// So final "Total Sales Value" is raw sales - returns - (discounts)
+// final total
 $tot_bill_dis = $rawSalesTotal - $totalReturns - ($totalItemDisc + $totalBillDisc);
 if ($tot_bill_dis < 0) {
-    $tot_bill_dis = 0; // just in case
+    $tot_bill_dis = 0;
 }
 
-// 4) Today's Sales (similar approach: raw - returns - discount), but only for today's orders
-$today_date = date("Y-m-d");
+// -------------------------------------------------------------------------------------
+// 5) Today's Sales (minus returns + discount) for orders dated today
+// -------------------------------------------------------------------------------------
+$today_date       = date("Y-m-d");
+$todayRawSales    = 0;
+$todayItemDisc    = 0;
+$todayBillDisc    = 0;
+$today_orders     = [];
+$processedRefToday= [];
 
-// (A) Get raw sales for today's orders
-$sql_today_sales = "
-    SELECT
-        o.id,
-        o.grm_ref,
-        o.quantity,
-        o.discount AS item_discount,
-        p.price,
-        g.discount_price AS bill_discount,
-        g.order_date
-    FROM tbl_order o
-    JOIN tbl_product p ON o.product_id = p.id
-    JOIN tbl_order_grm g ON o.grm_ref = g.id
-    WHERE DATE(g.order_date) = '$today_date'
-";
+// We'll re-fetch all orders
+$sql_orders_all2 = "SELECT * FROM tbl_order";
+$res_orders_all2 = $conn->query($sql_orders_all2);
 
-$rs_today_sales = $conn->query($sql_today_sales);
-$today_orders   = [];
-$processedRef   = [];
+while ($ord2 = $res_orders_all2->fetch_assoc()) {
+    $oid        = $ord2['id'];
+    $grm_ref    = $ord2['grm_ref'];
+    $p_id       = $ord2['product_id'];
+    $qty        = (int)$ord2['quantity'];
+    $item_disc  = (float)$ord2['discount'];
 
-while ($rowTS = $rs_today_sales->fetch_assoc()) {
-    $grm_ref      = $rowTS['grm_ref'];
-    $qty          = $rowTS['quantity'];
-    $price        = $rowTS['price'];
-    $item_discount= $rowTS['item_discount'];
-    $bill_discount= $rowTS['bill_discount'];
+    // find product price
+    $sql_p2 = "SELECT price FROM tbl_product WHERE id = '$p_id'";
+    $rp2 = $conn->query($sql_p2);
+    $pp2 = $rp2->fetch_assoc();
+    $price = ($pp2) ? (float)$pp2['price'] : 0;
 
+    // find order_grm
+    $sql_g2 = "SELECT discount_price, order_date FROM tbl_order_grm WHERE id = '$grm_ref'";
+    $rg2 = $conn->query($sql_g2);
+    $gg2 = $rg2->fetch_assoc();
+    if (!$gg2) {
+        continue;
+    }
+
+    $bill_discount = (float)$gg2['discount_price'];
+    // check if today's date
+    $ord_date_str  = substr($gg2['order_date'], 0, 10);
+    if ($ord_date_str !== $today_date) {
+        continue; // skip if not today's order
+    }
+
+    // group data by grm_ref
     if (!isset($today_orders[$grm_ref])) {
         $today_orders[$grm_ref] = [
             'gross_value' => 0,
@@ -188,126 +228,200 @@ while ($rowTS = $rs_today_sales->fetch_assoc()) {
             'bill_discount' => 0
         ];
     }
-    $today_orders[$grm_ref]['gross_value']   += ($qty * $price);
-    $today_orders[$grm_ref]['item_discount'] += $item_discount;
 
-    if (!isset($processedRef[$grm_ref])) {
+    $today_orders[$grm_ref]['gross_value']   += ($price * $qty);
+    $today_orders[$grm_ref]['item_discount'] += $item_disc;
+
+    if (!isset($processedRefToday[$grm_ref])) {
         $today_orders[$grm_ref]['bill_discount'] += $bill_discount;
-        $processedRef[$grm_ref] = true;
+        $processedRefToday[$grm_ref] = true;
     }
 }
 
-// Sum them
-$todayRawSales   = 0;
-$todayItemDisc   = 0;
-$todayBillDisc   = 0;
-
+// Summation for today's sales
 foreach ($today_orders as $ref => $vals) {
     $todayRawSales += $vals['gross_value'];
     $todayItemDisc += $vals['item_discount'];
     $todayBillDisc += $vals['bill_discount'];
 }
 
-// (B) Get total returns for today's orders
-$sql_returns_today = "
-    SELECT SUM(t_o.quantity * p.price) AS todayReturns
-    FROM tbl_return_exchange t_re
-    JOIN tbl_order t_o ON t_o.id = t_re.or_id
-    JOIN tbl_order_grm g ON g.id = t_o.grm_ref
-    JOIN tbl_product p ON p.id = t_o.product_id
-    WHERE DATE(g.order_date) = '$today_date'
-";
-$rs_ret_today = $conn->query($sql_returns_today);
+// total returns for today's orders
 $todayReturns = 0;
-if ($rs_ret_today && $rs_ret_today->num_rows > 0) {
-    $rowRetToday = $rs_ret_today->fetch_assoc();
-    $todayReturns = $rowRetToday['todayReturns'] ?: 0;
+$sql_ret_ex2 = "SELECT * FROM tbl_return_exchange";
+$rs_ret_ex2  = $conn->query($sql_ret_ex2);
+
+while ($rt2 = $rs_ret_ex2->fetch_assoc()) {
+    $or_id = $rt2['or_id'];
+    // find matching order
+    $sql_o2 = "SELECT product_id, quantity, grm_ref FROM tbl_order WHERE id = '$or_id'";
+    $ro2 = $conn->query($sql_o2);
+    $oo2 = $ro2->fetch_assoc();
+    if (!$oo2) continue;
+
+    $p_id  = $oo2['product_id'];
+    $qty   = (int)$oo2['quantity'];
+    $g_ref = $oo2['grm_ref'];
+
+    // check if that order is from today
+    $sql_g3 = "SELECT order_date FROM tbl_order_grm WHERE id = '$g_ref'";
+    $rg3 = $conn->query($sql_g3);
+    $gg3 = $rg3->fetch_assoc();
+    if (!$gg3) continue;
+
+    $g_date = substr($gg3['order_date'], 0, 10);
+    if ($g_date !== $today_date) {
+        continue;
+    }
+
+    // sum (price * qty)
+    $sql_p3 = "SELECT price FROM tbl_product WHERE id = '$p_id'";
+    $rp3 = $conn->query($sql_p3);
+    $pp3 = $rp3->fetch_assoc();
+    $price = ($pp3) ? (float)$pp3['price'] : 0;
+
+    $todayReturns += ($price * $qty);
 }
 
-// So today's final net sales
+// final net for today's sales
 $tot_bill_dis_today = $todayRawSales - $todayReturns - ($todayItemDisc + $todayBillDisc);
 if ($tot_bill_dis_today < 0) {
     $tot_bill_dis_today = 0;
 }
 
-$sql_daily_cash_in = "SELECT SUM(amount) AS total FROM tbl_expenses 
-                      WHERE DATE(expense_date) = CURDATE() 
+// -------------------------------------------------------------------------------------
+// 6) Today's Cash In & Expenses (no joins)
+// -------------------------------------------------------------------------------------
+$todayExpenses = 0;
+$today_date_ymd = date("Y-m-d");
+
+// 6A) Daily cash_in from tbl_expenses
+$total_daily_cash_in = 0;
+$sql_cash_in_day = "SELECT amount, expense_date, cash_in_out
+                    FROM tbl_expenses
+                    WHERE DATE(expense_date) = CURDATE()
                       AND cash_in_out = 1";
+$r_cash_in_day = $conn->query($sql_cash_in_day);
+while($ci = $r_cash_in_day->fetch_assoc()){
+    $total_daily_cash_in += (float)$ci['amount'];
+}
 
-$rs_daily_cash_in = $conn->query($sql_daily_cash_in);
-$total_daily_cash_in = ($rs_daily_cash_in->num_rows > 0) ? $rs_daily_cash_in->fetch_assoc()['total'] : 0;
+// 6B) Today's Non-Vendor Expenses + Vendor Cash
+$non_vendor_total = 0;
+$vendor_cash_total = 0;
 
-// 5) Today's Expenses (unchanged)
-$sql_non_vendor_expenses = "SELECT SUM(amount) AS total
-    FROM tbl_expenses
-    WHERE vendor_id =0
-      AND cash_in_out = 2
-      AND DATE(expense_date) = '$today_date'";
+// Get all expenses (no join)
+$sql_exp_all = "SELECT * FROM tbl_expenses";
+$rs_exp_all  = $conn->query($sql_exp_all);
+$expenses    = [];
+while($e = $rs_exp_all->fetch_assoc()){
+    $expenses[] = $e;
+}
 
-$rs_non_vendor = $conn->query($sql_non_vendor_expenses);
-$non_vendor_total = $rs_non_vendor->fetch_assoc()['total'] ?? 0;
+// Also get vendor payments separately
+$sql_vp_all = "SELECT * FROM tbl_vendor_payments";
+$rs_vp_all  = $conn->query($sql_vp_all);
+$vendor_payments = [];
+while($vp = $rs_vp_all->fetch_assoc()){
+    $vendor_payments[] = $vp;
+}
 
-$sql_vendor_cash_payments = "SELECT SUM(vp.amount) AS total
-    FROM tbl_vendor_payments vp
-    INNER JOIN tbl_expenses e ON vp.expense_id = e.expense_id
-    WHERE vp.payment_method = 'cash'
-      AND DATE(e.expense_date) = '$today_date'
-";
-$rs_vendor_cash = $conn->query($sql_vendor_cash_payments);
-$vendor_cash_total = $rs_vendor_cash->fetch_assoc()['total'] ?? 0;
+// Summation
+foreach($expenses as $ex){
+    // date check
+    $exDate = substr($ex['expense_date'], 0, 10);
+    if($exDate === $today_date_ymd){
+        // Non-vendor => vendor_id=0, cash_in_out=2
+        if(((int)$ex['vendor_id'] === 0) && ((int)$ex['cash_in_out'] === 2)){
+            $non_vendor_total += (float)$ex['amount'];
+        }
+    }
+}
 
+// For vendor payments by cash
+foreach($vendor_payments as $vp){
+    // find its corresponding expense row
+    foreach($expenses as $ex){
+        if($ex['expense_id'] == $vp['expense_id']){
+            // check date
+            $exDate = substr($ex['expense_date'], 0, 10);
+            if($exDate === $today_date_ymd && $vp['payment_method'] == 'cash'){
+                $vendor_cash_total += (float)$vp['amount'];
+            }
+        }
+    }
+}
 $tot_expenses_today = $non_vendor_total + $vendor_cash_total;
 
-// 6) Cash Inflow
-$sql_cash_in = "
-    SELECT SUM(amount) AS total
-    FROM tbl_expenses
-    WHERE vendor_id IS NULL
-      AND cash_in_out = 1
-      AND DATE(expense_date) = '$today_date'
-";
-$rs_cash_in = $conn->query($sql_cash_in);
-$cash_in_total = $rs_cash_in->fetch_assoc()['total'] ?? 0;
+// 6C) Additional "cash_in_total" check for vendor_id IS NULL
+$cash_in_total = 0;
+foreach($expenses as $ex){
+    $exDate = substr($ex['expense_date'], 0, 10);
+    if($exDate === $today_date_ymd && (int)$ex['cash_in_out'] === 1){
+        // vendor_id must be null or empty
+        // your DB might store NULL or 0. Adjust if needed:
+        if (empty($ex['vendor_id'])) {
+            $cash_in_total += (float)$ex['amount'];
+        }
+    }
+}
 
-// 7) Payment Breakdown (Raw - returns) for *today*
+// -------------------------------------------------------------------------------------
+// 7) Payment Breakdown (raw - returns) for today
+//    We'll sum by payment_type from tbl_order_grm using separate queries
+// -------------------------------------------------------------------------------------
 $total_payments_today = ['cash' => 0, 'online' => 0, 'bank' => 0, 'credit' => 0];
 
-// We can do a simpler approach: sum up each order's total, then subtract returns
-// by referencing the result for that order. But let's do a single query approach:
-$sql_payment_today = "
-    SELECT
-        g.payment_type,
-        SUM(o.quantity * p.price) AS rawOrderValue,
-        SUM(o.discount) AS totalItemDiscount,
-        g.discount_price AS billDiscount,
-        (
-          SELECT SUM(t_o.quantity * p2.price)
-          FROM tbl_return_exchange t_re
-          JOIN tbl_order t_o ON t_o.id = t_re.or_id
-          JOIN tbl_product p2 ON p2.id = t_o.product_id
-          WHERE t_re.or_id = o.id
-        ) AS returnsForThisOrder
-    FROM tbl_order o
-    JOIN tbl_order_grm g ON o.grm_ref = g.id
-    JOIN tbl_product p   ON o.product_id = p.id
-    WHERE DATE(g.order_date) = '$today_date'
-    GROUP BY g.id, g.payment_type
-";
-$rs_payment_today = $conn->query($sql_payment_today);
-while ($rowP = $rs_payment_today->fetch_assoc()) {
-    $ptype           = (int)$rowP['payment_type'];
-    $rawOrderValue   = (float)$rowP['rawOrderValue'];
-    $totalItemDisc   = (float)$rowP['totalItemDiscount'];
-    $billDiscount    = (float)$rowP['billDiscount'];
-    $returnsForOrder = (float)$rowP['returnsForThisOrder'];
+// We'll re-loop orders from today; group them by payment_type
+$sql_today_orders_3 = "SELECT * FROM tbl_order";
+$res_today_orders_3 = $conn->query($sql_today_orders_3);
 
-    // The net for this order is raw - discount - returns
-    $netOrder = $rawOrderValue - ($totalItemDisc + $billDiscount) - $returnsForOrder;
-    if ($netOrder < 0) {
-        $netOrder = 0; // just in case
+while($oRow = $res_today_orders_3->fetch_assoc()){
+    $oid       = $oRow['id'];
+    $grm_ref   = $oRow['grm_ref'];
+    $p_id      = $oRow['product_id'];
+    $qty       = (int)$oRow['quantity'];
+    $item_disc = (float)$oRow['discount'];
+
+    // find the grm row
+    $sql_g4 = "SELECT payment_type, discount_price, order_date
+               FROM tbl_order_grm WHERE id = '$grm_ref'";
+    $rg4 = $conn->query($sql_g4);
+    $gg4 = $rg4->fetch_assoc();
+    if(!$gg4) continue;
+
+    $g_date       = substr($gg4['order_date'], 0, 10);
+    if($g_date !== $today_date) {
+        continue;
     }
 
-    switch ($ptype) {
+    $ptype        = (int)$gg4['payment_type']; // 0= cash, 1=online, 2=bank, 3=credit
+    $billDiscount = (float)$gg4['discount_price'];
+
+    // get product price
+    $sql_pp = "SELECT price FROM tbl_product WHERE id='$p_id'";
+    $rp_pp  = $conn->query($sql_pp);
+    $row_pp = $rp_pp->fetch_assoc();
+    $price  = $row_pp ? (float)$row_pp['price'] : 0;
+
+    // raw order
+    $rawOrderValue = $price * $qty;
+
+    // returns for this order?
+    $returnsForThisOrder = 0;
+    $sql_ret_this = "SELECT * FROM tbl_return_exchange WHERE or_id='$oid'";
+    $res_ret_this = $conn->query($sql_ret_this);
+    while($rt = $res_ret_this->fetch_assoc()){
+        // if partial returns exist, handle accordingly
+        $returnsForThisOrder += ($price * $qty);
+    }
+
+    // net
+    $netOrder = $rawOrderValue - ($item_disc + $billDiscount) - $returnsForThisOrder;
+    if($netOrder < 0){
+        $netOrder = 0;
+    }
+
+    switch($ptype){
         case 0: $total_payments_today['cash']   += $netOrder; break;
         case 1: $total_payments_today['online'] += $netOrder; break;
         case 2: $total_payments_today['bank']   += $netOrder; break;
@@ -315,10 +429,54 @@ while ($rowP = $rs_payment_today->fetch_assoc()) {
     }
 }
 
-// 8) Till Balance: (cash received + any cash-in) - total expenses
-$till_balance = ($total_payments_today['cash'] + $cash_in_total) - $tot_expenses_today +$total_daily_cash_in;
-?>
+// -------------------------------------------------------------------------------------
+// 8) Return Payments (for today) - no join
+// -------------------------------------------------------------------------------------
+$total_amount_return = 0;
+$sqlReturn = "SELECT * FROM tbl_return_exchange
+              WHERE DATE(order_created) = CURDATE()";
+$resultReturn = $conn->query($sqlReturn);
 
+while($re = $resultReturn->fetch_assoc()){
+    // find matching order
+    $or_id = $re['or_id'];
+    $sql_oo = "SELECT product_id, discount, quantity
+               FROM tbl_order
+               WHERE id='$or_id'";
+    $res_oo = $conn->query($sql_oo);
+    $row_oo = $res_oo->fetch_assoc();
+    if(!$row_oo) continue;
+
+    $p_id      = $row_oo['product_id'];
+    $o_discount= (float)$row_oo['discount'];
+    $o_qty     = (int)$row_oo['quantity'];
+
+    // find product price
+    $sql_pp2 = "SELECT price FROM tbl_product WHERE id='$p_id'";
+    $res_pp2 = $conn->query($sql_pp2);
+    $row_pp2 = $res_pp2->fetch_assoc();
+    $p_price  = $row_pp2 ? (float)$row_pp2['price'] : 0;
+
+    // According to your snippet:
+    // IF(o.discount IS NOT NULL, (p.price - o.discount), p.price)
+    if ($o_discount != 0) {
+        $val = $p_price - $o_discount;
+    } else {
+        $val = $p_price;
+    }
+    $total_amount_return += ($val * $o_qty);
+}
+
+// -------------------------------------------------------------------------------------
+// 9) Till Balance
+//    = (cash received + any cash_in) - total expenses - today's return + total_daily_cash_in
+// -------------------------------------------------------------------------------------
+$till_balance = ($total_payments_today['cash'] + $cash_in_total)
+              - $tot_expenses_today
+              - $total_amount_return
+              + $total_daily_cash_in;
+
+?>
 <style>
     .dashboard-card {
         transition: transform 0.3s ease;
@@ -424,6 +582,7 @@ $till_balance = ($total_payments_today['cash'] + $cash_in_total) - $tot_expenses
             <div class="col-12">
                 <h4 class="section-title">Payments Overview</h4>
                 <div class="row g-4">
+                    <!-- Cash Flow -->
                     <div class="col-xl-3 col-lg-4 col-md-6">
                         <div class="card dashboard-card shadow-sm">
                             <div class="card-header bg-dark text-white">
@@ -442,53 +601,68 @@ $till_balance = ($total_payments_today['cash'] + $cash_in_total) - $tot_expenses
                         </div>
                     </div>
 
-                    <div class="col-xl-3 col-lg-4 col-md-6">
+                    <!-- Online Payments -->
+                    <div class="col-xl-2 col-lg-4 col-md-6">
                         <div class="card dashboard-card shadow-sm">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center">
-                                    <div class="card-icon bg-warning text-white me-3">
-                                        <i class="ri-global-line"></i>
-                                    </div>
-                                    <div>
-                                        <div class="metric-title">Online Payments</div>
-                                        <div class="metric-value text-warning">
-                                            Rs.<?= number_format($total_payments_today['online'], 2) ?>
-                                        </div>
+                            <div class="card-body d-flex align-items-center">
+                                <div class="card-icon bg-warning text-white me-3">
+                                    <i class="ri-global-line"></i>
+                                </div>
+                                <div>
+                                    <div class="metric-title">Online Payments</div>
+                                    <div class="metric-value text-warning">
+                                        Rs.<?= number_format($total_payments_today['online'], 2) ?>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-xl-3 col-lg-4 col-md-6">
+                    <!-- Bank Transfers -->
+                    <div class="col-xl-2 col-lg-4 col-md-6">
                         <div class="card dashboard-card shadow-sm">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center">
-                                    <div class="card-icon bg-warning text-white me-3">
-                                        <i class="ri-bank-line"></i>
-                                    </div>
-                                    <div>
-                                        <div class="metric-title">Bank Transfers</div>
-                                        <div class="metric-value text-warning">
-                                            Rs.<?= number_format($total_payments_today['bank'], 2) ?>
-                                        </div>
+                            <div class="card-body d-flex align-items-center">
+                                <div class="card-icon bg-primary text-white me-3">
+                                    <i class="ri-bank-line"></i>
+                                </div>
+                                <div>
+                                    <div class="metric-title">Bank Transfers</div>
+                                    <div class="metric-value text-primary">
+                                        Rs.<?= number_format($total_payments_today['bank'], 2) ?>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-xl-3 col-lg-4 col-md-6">
+
+                    <!-- Credit Payments -->
+                    <div class="col-xl-2 col-lg-4 col-md-6">
                         <div class="card dashboard-card shadow-sm">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center">
-                                    <div class="card-icon bg-danger text-white me-3">
-                                        <i class="ri-bank-card-2-line"></i>
+                            <div class="card-body d-flex align-items-center">
+                                <div class="card-icon bg-danger text-white me-3">
+                                    <i class="ri-bank-card-2-line"></i>
+                                </div>
+                                <div>
+                                    <div class="metric-title">Credit Payments</div>
+                                    <div class="metric-value text-danger">
+                                        Rs.<?= number_format($total_payments_today['credit'], 2) ?>
                                     </div>
-                                    <div>
-                                        <div class="metric-title">Credit Payments</div>
-                                        <div class="metric-value text-danger">
-                                            Rs.<?= number_format($total_payments_today['credit'], 2) ?>
-                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Return Payments -->
+                    <div class="col-xl-2 col-lg-4 col-md-6">
+                        <div class="card dashboard-card shadow-sm">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="card-icon bg-secondary text-white me-3">
+                                    <i class="ri-refund-2-line"></i>
+                                </div>
+                                <div>
+                                    <div class="metric-title">Return Payments</div>
+                                    <div class="metric-value text-secondary">
+                                        Rs.<?= number_format($total_amount_return, 2) ?>
                                     </div>
                                 </div>
                             </div>
@@ -594,20 +768,48 @@ $till_balance = ($total_payments_today['cash'] + $cash_in_total) - $tot_expenses
                                 </tbody>
                             </table>
                         </div>
+
                         <!-- Pagination -->
                         <nav>
                             <ul class="pagination justify-content-end">
-                                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                                <?php
+                                $visible_pages = 5; // Number of visible page links
+                                $start_page = max(1, $page - floor($visible_pages / 2));
+                                $end_page = min($total_pages, $start_page + $visible_pages - 1);
+
+                                // Ensure at least $visible_pages are shown
+                                if (($end_page - $start_page) < ($visible_pages - 1)) {
+                                    $start_page = max(1, $end_page - $visible_pages + 1);
+                                }
+
+                                // Previous Button
+                                if ($page > 1): ?>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=<?= $page - 1; ?>">&laquo; Prev</a>
+                                    </li>
+                                <?php endif; ?>
+
+                                <!-- Page Numbers -->
+                                <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
                                     <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
                                         <a class="page-link" href="?page=<?= $i; ?>"><?= $i; ?></a>
                                     </li>
                                 <?php endfor; ?>
+
+                                <!-- Next Button -->
+                                <?php if ($page < $total_pages): ?>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=<?= $page + 1; ?>">Next &raquo;</a>
+                                    </li>
+                                <?php endif; ?>
                             </ul>
                         </nav>
+
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 

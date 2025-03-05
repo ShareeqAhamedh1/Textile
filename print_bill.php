@@ -194,14 +194,18 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
   </div>
 
   <script>
-    window.onload = function() {
-      setTimeout(function() {
-        window.print();
-        window.onafterprint = function() {
-          window.close();
-        };
-      }, 500);
-    };
+  window.onload = function() {
+  // Set the onafterprint event before calling print
+  window.onafterprint = function() {
+      window.location.href = "pos.php"; // Redirect after printing
+  };
+
+  // Delay to ensure the page is fully loaded before printing
+  setTimeout(function() {
+      window.print();
+  }, 500);
+};
+
   </script>
 </body>
 </html>

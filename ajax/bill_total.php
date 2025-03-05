@@ -105,6 +105,7 @@
         <script type="text/javascript">
             document.getElementById('totPrice').value = <?= $total_price ?>;
             document.getElementById('addedValueTxt').value = <?= $total_price ?>;
+            document.getElementById('discount_amount').value=<?= $extra_discount ?>
         </script>
 
 <?php

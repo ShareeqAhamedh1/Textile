@@ -9,9 +9,25 @@
       $grm_id = $conn->insert_id;
       $_SESSION['grm_ref'] = $grm_id;
       $discount_price = getDataBack($conn,'tbl_order_grm','id',$grm_id,'discount_price');
+      $orderStatus = getDataBack($conn,'tbl_order_grm','id',$grm_id,'order_st');
+
+      if($orderStatus == 0){
+        $orSt="DRAFT";
+      }
+      else {
+        $orSt="Completed";
+      }
   } else {
       $grm_id = $_SESSION['grm_ref'];
       $discount_price = getDataBack($conn,'tbl_order_grm','id',$grm_id,'discount_price');
+      $orderStatus = getDataBack($conn,'tbl_order_grm','id',$grm_id,'order_st');
+
+      if($orderStatus == 0){
+        $orSt="DRAFT";
+      }
+      else {
+        $orSt="Completed";
+      }
   }
 ?>
 <!DOCTYPE html>
@@ -44,18 +60,18 @@
           </a>
         </div>
         <div class="col-lg-6">
-          <h1 class="text-center text-primary">
-            <i class="fas fa-store me-2"></i> POS System BILL ID: 00<?= $grm_id ?>
-          </h1>
+          <h3 class="text-center text-primary">
+            <i class="fas fa-store me-2"></i> POS System BILL ID: 00<?= $grm_id ?> - <?= $orSt ?>
+          </h3>
         </div>
         <div class="col-lg-4">
           <h5 class="text-center text-dark">
               <span id="selectedCustomerName">No Customer Selected</span>
           </h5>
         </div>
-      </div>
+      </div> <br>
 
-
+<?php if($orderStatus != 1){ ?>
       <div class="mb-3">
     <div class="input-group">
       <select id="customerSelect" class="form-select">
@@ -67,6 +83,7 @@
         </button>
     </div>
 </div>
+<?php } ?>
 
     </header>
     <div class="alert alert-info mt-2" id="customerInfoBox" style="display: none;">
@@ -92,7 +109,7 @@
               <div class="col-lg-8">
                 <div class="input-group">
                   <span class="input-group-text"><i class="fas fa-barcode"></i></span>
-                  <input type="text" class="form-control" id="barcodeInput" placeholder="Add Items By Barcode Search" />
+                  <input type="text" class="form-control" <?php if($orderStatus == 1){ echo "disabled"; } ?> id="barcodeInput" placeholder="Add Items By Barcode Search" />
                 </div>
               </div>
             </div>
@@ -107,7 +124,7 @@
               <div class="col-6">
                 <div class="input-group">
                   <span class="input-group-text"><i class="fas fa-percentage"></i></span>
-                  <input type="text" id="discount_amount" onkeyup="discountBill(this.value)" class="form-control" value="<?php if($discount_price != 0){ echo $discount_price; } ?>" placeholder="Bill Disc (LKR200)" />
+                  <input type="text" id="discount_amount" <?php if($orderStatus == 1){ echo "disabled"; } ?> onkeyup="discountBill(this.value)" class="form-control" value="<?php if($discount_price != 0){ echo $discount_price; } ?>" placeholder="Total Bill Discount" />
                 </div>
               </div>
               <!-- Total -->
@@ -119,6 +136,7 @@
             <!-- Payment Options -->
             <input type="hidden" id="totPrice" value="">
             <hr>
+            <?php if($orderStatus !=1){ ?>
             <div class="row">
               <div class="col-lg-6">
                 <button type="button" class="btn btn-primary btn-sm" id="pre_complete" onclick="pre_complete()">Complete Bill</button>
@@ -128,6 +146,7 @@
                 <button type="button" class="btn btn-secondary btn-sm" id="add_to_draft">Add to Draft</button>
               </div>
             </div>
+          <?php } ?>
           </div>
         </div>
       </div>
@@ -145,7 +164,7 @@
                   <label for="searchInput" class="form-label">Product Name or Barcode</label>
                   <div class="input-group">
                     <span class="input-group-text"><i class="fas fa-barcode"></i></span>
-                    <input type="text" class="form-control" id="searchInput" placeholder="Enter search term" />
+                    <input type="text" class="form-control" <?php if($orderStatus == 1){ echo "disabled"; } ?> id="searchInput" placeholder="Enter search term" />
                   </div>
                 </div>
                 <div class="col-md-2">

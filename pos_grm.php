@@ -306,3 +306,16 @@
 		</script>
     </body>
 </html>
+<?php
+	if(isset($_SESSION['grm_ref'])){
+		$gid = $_SESSION['grm_ref'];
+
+		$sql = "SELECT * FROM tbl_order WHERE grm_ref='$gid'";
+		$rs = $conn->query($sql);
+		if($rs->num_rows == 0){
+			$sql="DELETE FROM tbl_order_grm WHERE id='$gid'";
+			$rs=$conn->query($sql);
+		}
+		unset($_SESSION['grm_ref']);
+	}
+ ?>
