@@ -526,13 +526,24 @@ $(document).ready(function() {
                 $("#complete_bill").prop("disabled", true).text("Processing...");
             },
             success: function(response) {
-                if (response == 200) {
-                    window.location.href = "pos_grm.php";
-                } else {
-                    alert("Error: " + response);
-                    $("#complete_bill").prop("disabled", false).text("Complete Bill");
-                }
+    if (response == 200) {
+        // Call backend to trigger drawer
+        $.ajax({
+            url: "backend/open_drawer.php",
+            method: "POST",
+            success: function(drawerResponse) {
+                console.log("Drawer Opened: " + drawerResponse);
             },
+            error: function(xhr, status, error) {
+                console.error("Error opening drawer: " + error);
+            }
+        });
+
+        window.location.href = "pos_grm.php";
+    } else {
+        window.location.href = "print_bill.php?bill_id=" + response;
+    }
+},
             error: function(xhr, status, error) {
                 alert("Failed to complete bill. Try again.");
                 $("#complete_bill").prop("disabled", false).text("Complete Bill");
