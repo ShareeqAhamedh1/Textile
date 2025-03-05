@@ -100,6 +100,11 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
       padding: 0;
       font-family: 'Courier New', Courier, monospace;
     }
+    .logo-container img {
+      width: 60mm;
+      height: auto;
+      max-height: 30mm;
+    }
     .header, .store-details, .invoice-details, .totals, .customer-details, .footer {
       text-align: center;
     }
@@ -127,6 +132,9 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
 </head>
 <body>
   <div class="header">
+    <div class="logo-container">
+      <img src="logo/b_k_logo.png" alt="Store Logo">
+    </div>
     <div class="store-details">
       <div>No.115 Nuwara Eliya Road, Gampola</div>
       <div>Phone: 077 9003566</div>
@@ -192,6 +200,11 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
       <div><strong>Balance to Return:</strong> Rs <?= number_format($balanceReturn) ?>/-</div>
     <?php } ?>
   </div>
+  <div class="footer">
+    <div>
+    <p>Exchange of any item in its original condition with receipt is possible within 7 days </p>
+    <p>Thank you! Come again.</p></div>
+  </div>
 
   <script>
   window.onload = function() {
