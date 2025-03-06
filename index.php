@@ -584,21 +584,56 @@ $till_balance = ($total_payments_today['cash'])
                 <div class="row g-4">
                     <!-- Cash Flow -->
                     <div class="col-xl-3 col-lg-4 col-md-6">
-                        <div class="card dashboard-card shadow-sm">
-                            <div class="card-header bg-dark text-white">
-                                <h6 class="mb-0">Cash Flow</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="metric-title">Received via Cash</div>
-                                <div class="metric-value">
-                                    Rs.<?= number_format($total_payments_today['cash'], 2) ?>
-                                </div>
-                                <div class="metric-title mt-2">Till Balance</div>
-                                <div class="metric-value text-success">
-                                    Rs.<?= number_format($till_balance, 2) ?>
-                                </div>
-                            </div>
-                        </div>
+                      <div class="card dashboard-card shadow-sm">
+  <div class="card-header bg-dark text-white">
+      <h6 class="mb-0">Cash Flow</h6>
+  </div>
+  <div class="card-body">
+      <div class="metric-title">Received via Cash</div>
+      <div class="metric-value">
+          Rs.<?= number_format($total_payments_today['cash'], 2) ?>
+      </div>
+
+      <div class="metric-title mt-2">Till Balance</div>
+      <div class="metric-value text-success">
+          Rs.<?= number_format($till_balance, 2) ?>
+      </div>
+
+      <hr>
+
+      <!-- User Input for Original Till Balance -->
+      <div class="form-group">
+          <label for="originalTillBalance">Enter Original Till Balance:</label>
+          <input type="number" class="form-control" id="originalTillBalance" placeholder="Enter Amount">
+      </div>
+
+      <!-- Display Difference -->
+      <div class="metric-title mt-2">Difference</div>
+      <div id="differenceDisplay" class="metric-value font-weight-bold"></div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('originalTillBalance').addEventListener('input', function () {
+      let originalBalance = parseFloat(this.value) || 0;
+      let tillBalance = <?= $till_balance ?>;
+      let difference = tillBalance - originalBalance;
+
+      let differenceDisplay = document.getElementById('differenceDisplay');
+
+      if (difference > 0) {
+          differenceDisplay.innerHTML = `Rs.${difference.toFixed(2)}`;
+          differenceDisplay.className = "metric-value text-success font-weight-bold";
+      } else if (difference < 0) {
+          differenceDisplay.innerHTML = `Rs.${difference.toFixed(2)}`;
+          differenceDisplay.className = "metric-value text-danger font-weight-bold";
+      } else {
+          differenceDisplay.innerHTML = `Rs.0.00`;
+          differenceDisplay.className = "metric-value text-secondary font-weight-bold";
+      }
+  });
+</script>
+
                     </div>
 
                     <!-- Online Payments -->
