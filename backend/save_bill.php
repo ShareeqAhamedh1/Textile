@@ -6,6 +6,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $payment_method = $_POST['payment_method'] ?? 1;
     $action = $_POST['action'] ?? '';
     $status = ($action === "complete_bill") ? "1" : "0";
+    $cash_took = $_REQUEST['paid_amount_e'];
 
     if(isset($_REQUEST['act'])){
       $act =$_REQUEST['act'];
@@ -21,7 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       $cid =0;
     }
 
-    $sql ="UPDATE tbl_order_grm SET discount_price='$discount_amount',customer_id ='$cid',payment_type='$payment_method',order_st='$status' WHERE id='$grm_id'";
+    $sql ="UPDATE tbl_order_grm SET discount_price='$discount_amount',customer_id ='$cid',payment_type='$payment_method',order_st='$status',cash_took='$cash_took' WHERE id='$grm_id'";
     $rs = $conn->query($sql);
 
     if ($rs > 0) {

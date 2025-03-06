@@ -98,7 +98,7 @@
       <div class="col-md-6">
         <div class="card h-100">
           <div class="card-header bg-primary text-white">
-            <h4 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Cart Summary & Bill <input type="hidden" id="addedValueTxt" name="" value=""> </h4>
+            <h4 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Cart Summary & Bill  </h4>
           </div>
           <div class="card-body">
             <!-- Cart Items List (Scrollable) -->
@@ -109,7 +109,7 @@
               <div class="col-lg-8">
                 <div class="input-group">
                   <span class="input-group-text"><i class="fas fa-barcode"></i></span>
-                  <input type="text" class="form-control" <?php if($orderStatus == 1){ echo "disabled"; } ?> id="barcodeInput" placeholder="Add Items By Barcode Search" />
+                  <input type="text" class="form-control" <?php if($orderStatus == 1){ echo "disabled"; } ?> id="barcodeInput" placeholder="Add Items By Barcode Search" autofocus />
                 </div>
               </div>
             </div>
@@ -134,7 +134,7 @@
             </div>
             <hr />
             <!-- Payment Options -->
-            <input type="hidden" id="totPrice" value="">
+
             <hr>
             <?php if($orderStatus !=1){ ?>
             <div class="row">
@@ -271,7 +271,7 @@
             <label class="form-label"><i class="fas fa-hand-holding-usd me-1"></i> Amount Paid (LKR)</label>
             <div class="input-group">
               <span class="input-group-text"><i class="fas fa-rupee-sign"></i></span>
-              <input type="number" id="paid_amount" onkeyup="showBalance()" class="form-control" onkeyup="updateChange()" placeholder="Enter amount">
+              <input type="number" id="paid_amount" onkeyup="showBalance()" class="form-control" onkeyup="updateChange()" placeholder="Enter amount" autofocus>
             </div>
           </div>
 
@@ -468,6 +468,7 @@ $(document).ready(function() {
     $("#complete_bill").click(function() {
         let discount_amount = $("#discount_amount").val() || 0;
         let payment_method = $("#payment_method").val();
+        let paid_amount = $('#paid_amount').val();
 
         var selectedCustomerName = $("#selectedCustomerName").text().trim();
         if (selectedCustomerName === "No Customer Selected" && payment_method == 3) {
@@ -481,6 +482,7 @@ $(document).ready(function() {
             data: {
                 discount_amount: discount_amount,
                 payment_method: payment_method,
+                paid_amount_e:paid_amount,
                 action: "complete_bill",
                 act:0
             },
@@ -504,64 +506,57 @@ $(document).ready(function() {
 
 
     $("#complete_bill_without_bill").click(function() {
-    let discount_amount = $("#discount_amount").val() || 0;
-    let payment_method = $("#payment_method").val();
-
-    var selectedCustomerName = $("#selectedCustomerName").text().trim();
-    if (selectedCustomerName === "No Customer Selected" && payment_method == 3) {
-        alert("For the credit bill, customer details are required");
-        return false;
-    }
-
-    $.ajax({
-        url: "backend/save_bill.php",
-        method: "POST",
-        data: {
-            discount_amount: discount_amount,
-            payment_method: payment_method,
-            action: "complete_bill",
-            act: 1
-        },
-        beforeSend: function() {
-            $("#complete_bill_without_bill").prop("disabled", true).text("Processing...");
-        },
-        success: function(response) {
-            if (response == 200) {
-                // Call backend to trigger the printer and open the cash drawer
-                $.ajax({
-                    url: "backend/open_drawer.php",
-                    method: "POST",
-                    success: function(drawerResponse) {
-                        console.log("Drawer Opened: " + drawerResponse);
-                        window.location.href = "pos_grm.php";
-                    },
-                    error: function(xhr, status, error) {
-                        console.error("Error opening drawer: " + error);
-                        window.location.href = "pos_grm.php"; // Redirect even if the drawer fails
-                    }
-                });
-            } else {
-                window.location.href = "print_bill.php?bill_id=" + response;
-            }
-        },
-        error: function(xhr, status, error) {
-            alert("Failed to complete bill. Try again.");
-            $("#complete_bill_without_bill").prop("disabled", false).text("Complete Bill");
-            console.error(error);
-        }
-    });
-});
-
-    // Add to draft click event
-    $("#add_to_draft").click(function() {
         let discount_amount = $("#discount_amount").val() || 0;
-        let payment_method = $("input[name='payment']:checked").val();
+        let payment_method = $("#payment_method").val();
+        let paid_amount = $('#paid_amount').val();
+
+        var selectedCustomerName = $("#selectedCustomerName").text().trim();
+        if (selectedCustomerName === "No Customer Selected" && payment_method == 3) {
+            alert("For the credit bill customer details required");
+            return false;
+        }
+
         $.ajax({
             url: "backend/save_bill.php",
             method: "POST",
             data: {
                 discount_amount: discount_amount,
                 payment_method: payment_method,
+                paid_amount_e:paid_amount,
+                action: "complete_bill",
+                act:1
+            },
+            beforeSend: function() {
+                $("#complete_bill").prop("disabled", true).text("Processing...");
+            },
+            success: function(response) {
+                if (response == 200) {
+                    window.location.href = "pos_grm.php";
+                } else {
+                    alert("Error: " + response);
+                    $("#complete_bill").prop("disabled", false).text("Complete Bill");
+                }
+            },
+            error: function(xhr, status, error) {
+                alert("Failed to complete bill. Try again.");
+                $("#complete_bill").prop("disabled", false).text("Complete Bill");
+                console.error(error);
+            }
+        });
+    });
+
+    // Add to draft click event
+    $("#add_to_draft").click(function() {
+        let discount_amount = $("#discount_amount").val() || 0;
+        let payment_method = $("input[name='payment']:checked").val();
+        let paid_amount = $('#paid_amount').val();
+        $.ajax({
+            url: "backend/save_bill.php",
+            method: "POST",
+            data: {
+                discount_amount: discount_amount,
+                payment_method: payment_method,
+                paid_amount_e:paid_amount,
                 action: "add_to_draft"
             },
             beforeSend: function() {
@@ -760,44 +755,51 @@ $(document).ready(function() {
 
 
 
-function applyDiscount(id, dsct, price) {
-    clearTimeout(discountTimeout); // Clear previous timeout
+    function applyDiscount(id, dsct, price) {
+        clearTimeout(discountTimeout); // Clear previous timeout
 
-    discountTimeout = setTimeout(() => {
-        let discountValue;
+        discountTimeout = setTimeout(() => {
+            let discountValue;
 
-        // Check if dsct contains '%' and calculate percentage discount
-        if (dsct.includes('%')) {
-            let percentage = parseFloat(dsct.replace('%', '').trim()) || 0;
-            discountValue = Math.round((percentage / 100) * price); // Calculate percentage-based discount
-        } else {
-            discountValue = parseFloat(dsct) || 0; // Direct fixed discount
-        }
-
-        $.ajax({
-            url: 'backend/update_discount.php',
-            method: 'POST',
-            data: { order_id: id, discount: discountValue },
-            success: function(resp) {
-              if (resp == 200) {
-                  let paid_amount = parseFloat(document.getElementById('paid_amount').value) || 0;
-                  if (paid_amount !== 0) {
-                      showBalance();
-                  }
-                  let discountValue = document.getElementById('discount_amount').value;
-                  if (discountValue !== "") {
-                      discountBill(discountValue);
-                  } else {
-                      calculateTotal();
-                  }
-                  $('#showCartItems').load('ajax/cart_items.php');
-              } else {
-                  console.error('Update failed:', resp);
-              }
+            // Check if dsct contains '%' and calculate percentage discount
+            if (dsct.includes('%')) {
+                let percentage = parseFloat(dsct.replace('%', '').trim()) || 0;
+                discountValue = Math.round((percentage / 100) * price); // Calculate percentage-based discount
             }
-        });
-    }, 500); // Timeout set to 500ms (adjust if needed)
-}
+            // Check if dsct contains 'p' and apply the logic to set total price
+            else if (dsct.toLowerCase().endsWith('p')) {
+                let newPrice = parseFloat(dsct.replace('p', '').trim()) || 0;
+                discountValue = price - newPrice; // Adjust discount to make total price equal to newPrice
+            }
+            else {
+                discountValue = parseFloat(dsct) || 0; // Direct fixed discount
+            }
+
+            $.ajax({
+                url: 'backend/update_discount.php',
+                method: 'POST',
+                data: { order_id: id, discount: discountValue },
+                success: function(resp) {
+                    if (resp == 200) {
+                        let paid_amount = parseFloat(document.getElementById('paid_amount').value) || 0;
+                        if (paid_amount !== 0) {
+                            showBalance();
+                        }
+                        let discountValue = document.getElementById('discount_amount').value;
+                        if (discountValue !== "") {
+                            discountBill(discountValue);
+                        } else {
+                            calculateTotal();
+                        }
+                        $('#showCartItems').load('ajax/cart_items.php');
+                    } else {
+                        console.error('Update failed:', resp);
+                    }
+                }
+            });
+        }, 500); // Timeout set to 500ms (adjust if needed)
+    }
+
 
 
     </script>
@@ -883,11 +885,130 @@ function applyDiscount(id, dsct, price) {
           });
         }
     }
+
+    function fkeypressed(){
+      let discount_amount = $("#discount_amount").val() || 0;
+      let payment_method = $("#payment_method").val();
+      let paid_amount = $('#paid_amount').val();
+
+      var selectedCustomerName = $("#selectedCustomerName").text().trim();
+      if (selectedCustomerName === "No Customer Selected" && payment_method == 3) {
+          alert("For the credit bill customer details required");
+          return false;
+      }
+
+      $.ajax({
+          url: "backend/save_bill.php",
+          method: "POST",
+          data: {
+              discount_amount: discount_amount,
+              payment_method: payment_method,
+              paid_amount_e:paid_amount,
+              action: "complete_bill",
+              act:0
+          },
+          beforeSend: function() {
+              $("#complete_bill").prop("disabled", true).text("Processing...");
+          },
+          success: function(response) {
+              if (response == 200) {
+                  window.location.href = "pos_grm.php";
+              } else {
+                  window.location.href = "print_bill.php?bill_id=" + response;
+              }
+          },
+          error: function(xhr, status, error) {
+              alert("Failed to complete bill. Try again.");
+              $("#complete_bill").prop("disabled", false).text("Complete Bill");
+              console.error(error);
+          }
+      });
+    }
+
+    function fkeypresstwice(){
+      let discount_amount = $("#discount_amount").val() || 0;
+      let payment_method = $("#payment_method").val();
+      let paid_amount = $('#paid_amount').val();
+
+      var selectedCustomerName = $("#selectedCustomerName").text().trim();
+      if (selectedCustomerName === "No Customer Selected" && payment_method == 3) {
+          alert("For the credit bill customer details required");
+          return false;
+      }
+
+      $.ajax({
+          url: "backend/save_bill.php",
+          method: "POST",
+          data: {
+              discount_amount: discount_amount,
+              payment_method: payment_method,
+              paid_amount_e:paid_amount,
+              action: "complete_bill",
+              act:1
+          },
+          beforeSend: function() {
+              $("#complete_bill").prop("disabled", true).text("Processing...");
+          },
+          success: function(response) {
+              if (response == 200) {
+                  window.location.href = "pos_grm.php";
+              } else {
+                  alert("Error: " + response);
+                  $("#complete_bill").prop("disabled", false).text("Complete Bill");
+              }
+          },
+          error: function(xhr, status, error) {
+              alert("Failed to complete bill. Try again.");
+              $("#complete_bill").prop("disabled", false).text("Complete Bill");
+              console.error(error);
+          }
+      });
+    }
+
+    let f12PressCount = 0;
+    let timer;
+
+    document.addEventListener("keydown", function(event) {
+        if (event.keyCode === 123) { // F12 key
+            event.preventDefault(); // Prevent default behavior
+
+            if ($('#paymentModal').is(':visible')) {
+
+                f12PressCount++;
+
+                if (f12PressCount === 1) {
+
+                    clearTimeout(timer);
+                    timer = setTimeout(() => {
+                        if (f12PressCount === 1) {
+                            fkeypressed();
+                        }
+                        f12PressCount = 0;
+                    }, 1000);
+                }
+                else if (f12PressCount === 2) {
+                    clearTimeout(timer);
+                    fkeypresstwice();
+                    f12PressCount = 0;
+                }
+            } else {
+
+                pre_complete();
+            }
+        }
+    });
+
+
+
+
+
+
     </script>
     <script>
       window.onload = function() {
         <?php if($discount_price != 0) { ?>
           discountBill(<?= $discount_price ?>);
         <?php } ?>
+
       };
     </script>

@@ -15,6 +15,7 @@
             $qty = $row['quantity'];
             $p_price = getDataBack($conn, 'tbl_product', 'id', $p_id, 'price') * $qty;
             $discount = $row['discount'] ?? 0;
+            $discount = $discount * $qty;
             $p_price -= $discount;
             $total_discount += $discount;
 
@@ -102,13 +103,10 @@
             <?php endif; ?>
         </div>
 
-        <script type="text/javascript">
-            document.getElementById('totPrice').value = <?= $total_price ?>;
-            document.getElementById('addedValueTxt').value = <?= $total_price ?>;
-            document.getElementById('discount_amount').value=<?= $extra_discount ?>
-        </script>
 
 <?php
     } else { ?>
         <p class="mb-1" style="font-size: 0.9rem;">Total: <span class="fw-bold">LKR 0</span></p>
 <?php } ?>
+<input type="hidden" id="addedValueTxt" name="" value="<?= $total_price ?>">
+  <input type="hidden" id="totPrice" value="<?= $total_price ?>">

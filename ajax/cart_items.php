@@ -16,9 +16,11 @@ if ($rs->num_rows > 0) {
                 $id = $row['id'];
                 $p_id = $row['product_id'];
                 $p_name = getDataBack($conn, 'tbl_product', 'id', $p_id, 'name');
+                $barcode_number = getDataBack($conn, 'tbl_product', 'id', $p_id, 'barcode');
                 $p_price = getDataBack($conn, 'tbl_product', 'id', $p_id, 'price');
                 $qty = $row['quantity'];
                 $discount = $row['discount'] ?? 0;
+                $discount = $discount * $qty;
                 $currentStock = currentStockCount($conn, $p_id);
                 $exchange_st = -1;
 
@@ -53,6 +55,7 @@ if ($rs->num_rows > 0) {
                 <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
                     <div>
                         <h6 class="mb-1"><?= htmlspecialchars($p_name) ?> <?= $statusBadge ?></h6>
+                        <small class="text-muted"> <?= $barcode_number ?> </small> <br>
                         <small class="text-muted">Price per unit: LKR <?= number_format($p_price, 2) ?></small>
                         <div>Stock: <span class="fw-bold"><?= $currentStock ?></span> <?= $stockBadge ?></div>
                     </div>

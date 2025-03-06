@@ -325,7 +325,7 @@
         }
 
 		function printBarcode(productId) {
-    var printWindow = window.open('print_barcode3.php?id=' + productId, '_blank');
+    var printWindow = window.open('print_barcode.php?id=' + productId, '_blank');
     printWindow.focus();
 }
 
