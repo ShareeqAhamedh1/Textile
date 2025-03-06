@@ -1,23 +1,23 @@
 <?php
 include './conn.php';
-// Open cash drawer by sending ESC/POS command to the printer
-$printer_name = "Xprinter XP-T361U"; // Set your receipt printer's name
-$handle = printer_open($printer_name);
+
+$printer = "XP-T361U"; // Change this to your printer name
+$handle = printer_open($printer);
 
 if ($handle) {
-    printer_start_doc($handle, "Cash Drawer Open");
+    printer_start_doc($handle, "Open Cash Drawer");
     printer_start_page($handle);
     
-    // ESC/POS command to open drawer (standard: \x1B\x70\x00\x19\xFA)
-    $drawerCommand = "\x1B\x70\x00\x19\xFA"; 
-
+    // ESC/POS command to open the cash drawer
+    $drawerCommand = chr(27) . chr(112) . chr(0) . chr(25) . chr(250);
     printer_write($handle, $drawerCommand);
+    
     printer_end_page($handle);
     printer_end_doc($handle);
     printer_close($handle);
     
-    echo "Drawer Opened";
+    echo "Drawer opened successfully";
 } else {
-    echo "Printer Not Found";
+    echo "Error opening printer";
 }
 ?>
