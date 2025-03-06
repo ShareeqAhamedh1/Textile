@@ -131,6 +131,8 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
   </style>
 </head>
 <body>
+<br>
+<br>
   <div class="header">
     <div class="logo-container">
       <img src="logo/b_k_logo.png" alt="Store Logo">
@@ -165,6 +167,8 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
         <th>Total</th>
       </tr>
     </thead>
+<br>
+<br>
     <tbody>
       <?php foreach ($items as $item) { ?>
         <tr>
@@ -205,7 +209,8 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
     <p>Exchange of any item in its original condition with receipt is possible within 7 days </p>
     <p>Thank you! Come again.</p></div>
   </div>
-
+<br>
+<br>
   <script>
   window.onload = function() {
   // Set the onafterprint event before calling print
