@@ -3,7 +3,7 @@
 
   if (!isset($_SESSION['grm_ref'])) {
       $order_ref = generateOrderRef($conn);
-      $sqlCreate = "INSERT INTO tbl_order_grm (order_ref, order_st) VALUES ('$order_ref', 0)";
+      $sqlCreate = "INSERT INTO tbl_order_grm (order_ref, order_st) VALUES ('$order_ref', 5)";
       $rsCreate = $conn->query($sqlCreate);
 
       $grm_id = $conn->insert_id;
@@ -13,6 +13,9 @@
 
       if($orderStatus == 0){
         $orSt="DRAFT";
+      }
+      elseif($orderStatus == 5){
+        $orSt ="On Process";
       }
       else {
         $orSt="Completed";
@@ -24,6 +27,9 @@
 
       if($orderStatus == 0){
         $orSt="DRAFT";
+      }
+      elseif($orderStatus == 5){
+        $orSt ="On Process";
       }
       else {
         $orSt="Completed";
@@ -95,7 +101,7 @@
     <!-- Two-column layout: Left = Cart Summary & Bill, Right = Product Search -->
     <div class="row g-4">
       <!-- Left Column: Cart Summary & Bill -->
-      <div class="col-md-6">
+      <div class="col-md-8">
         <div class="card h-100">
           <div class="card-header bg-primary text-white">
             <h4 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Cart Summary & Bill  </h4>
@@ -152,7 +158,7 @@
       </div>
 
       <!-- Right Column: Product Search & Filters -->
-      <div class="col-md-6">
+      <div class="col-md-4">
         <div class="card h-100">
           <div class="card-header bg-success text-white">
             <h4 class="mb-0"><i class="fas fa-search me-2"></i>Product Search</h4>
@@ -160,42 +166,12 @@
           <div class="card-body">
             <!-- Search Form -->
               <div class="row g-3">
-                <div class="col-md-6">
+                <div class="col-md-12">
                   <label for="searchInput" class="form-label">Product Name or Barcode</label>
                   <div class="input-group">
                     <span class="input-group-text"><i class="fas fa-barcode"></i></span>
                     <input type="text" class="form-control" <?php if($orderStatus == 1){ echo "disabled"; } ?> id="searchInput" placeholder="Enter search term" />
                   </div>
-                </div>
-                <div class="col-md-2">
-                  <label for="sizeFilter" class="form-label">Size</label>
-                  <select id="sizeFilter" class="form-select">
-                    <option value="">All</option>
-                    <option value="S">Small</option>
-                    <option value="M">Medium</option>
-                    <option value="L">Large</option>
-                    <option value="XL">Extra Large</option>
-                  </select>
-                </div>
-                <div class="col-md-2">
-                  <label for="colorFilter" class="form-label">Color</label>
-                  <select id="colorFilter" class="form-select">
-                    <option value="">All</option>
-                    <option value="red">Red</option>
-                    <option value="blue">Blue</option>
-                    <option value="green">Green</option>
-                    <option value="black">Black</option>
-                  </select>
-                </div>
-                <div class="col-md-2">
-                  <label for="categoryFilter" class="form-label">Category</label>
-                  <select id="categoryFilter" class="form-select">
-                    <option value="">All</option>
-                    <option value="electronics">Electronics</option>
-                    <option value="clothing">Clothing</option>
-                    <option value="accessories">Accessories</option>
-                    <option value="others">Others</option>
-                  </select>
                 </div>
               </div>
             <!-- Search Results (Scrollable) -->
