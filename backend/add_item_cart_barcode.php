@@ -27,16 +27,6 @@ if (!$p_id) {
 $qty = 1;
 $currentStock = currentStockCount($conn, $p_id);
 
-// 🚨 Stock Validations
-if ($currentStock === 0) {
-    echo json_encode(["statusCode" => 400, "message" => "Out of stock"]);
-    exit;
-}
-
-if ($qty > $currentStock) {
-    echo json_encode(["statusCode" => 400, "message" => "Only $currentStock items left in stock"]);
-    exit;
-}
 
 // ✅ Insert order if stock is available
 $sql = "INSERT INTO tbl_order (product_id, quantity, grm_ref) VALUES (?, ?, ?)";
