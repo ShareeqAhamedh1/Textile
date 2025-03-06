@@ -504,53 +504,53 @@ $(document).ready(function() {
 
 
     $("#complete_bill_without_bill").click(function() {
-        let discount_amount = $("#discount_amount").val() || 0;
-        let payment_method = $("#payment_method").val();
+    let discount_amount = $("#discount_amount").val() || 0;
+    let payment_method = $("#payment_method").val();
 
-        var selectedCustomerName = $("#selectedCustomerName").text().trim();
-        if (selectedCustomerName === "No Customer Selected" && payment_method == 3) {
-            alert("For the credit bill customer details required");
-            return false;
+    var selectedCustomerName = $("#selectedCustomerName").text().trim();
+    if (selectedCustomerName === "No Customer Selected" && payment_method == 3) {
+        alert("For the credit bill, customer details are required");
+        return false;
+    }
+
+    $.ajax({
+        url: "backend/save_bill.php",
+        method: "POST",
+        data: {
+            discount_amount: discount_amount,
+            payment_method: payment_method,
+            action: "complete_bill",
+            act: 1
+        },
+        beforeSend: function() {
+            $("#complete_bill_without_bill").prop("disabled", true).text("Processing...");
+        },
+        success: function(response) {
+            if (response == 200) {
+                // Call backend to trigger the printer and open the cash drawer
+                $.ajax({
+                    url: "backend/open_drawer.php",
+                    method: "POST",
+                    success: function(drawerResponse) {
+                        console.log("Drawer Opened: " + drawerResponse);
+                        window.location.href = "pos_grm.php";
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error opening drawer: " + error);
+                        window.location.href = "pos_grm.php"; // Redirect even if the drawer fails
+                    }
+                });
+            } else {
+                window.location.href = "print_bill.php?bill_id=" + response;
+            }
+        },
+        error: function(xhr, status, error) {
+            alert("Failed to complete bill. Try again.");
+            $("#complete_bill_without_bill").prop("disabled", false).text("Complete Bill");
+            console.error(error);
         }
-
-        $.ajax({
-            url: "backend/save_bill.php",
-            method: "POST",
-            data: {
-                discount_amount: discount_amount,
-                payment_method: payment_method,
-                action: "complete_bill",
-                act:1
-            },
-            beforeSend: function() {
-                $("#complete_bill").prop("disabled", true).text("Processing...");
-            },
-            success: function(response) {
-    if (response == 200) {
-        // Call backend to trigger drawer
-        $.ajax({
-            url: "backend/open_drawer.php",
-            method: "POST",
-            success: function(drawerResponse) {
-                console.log("Drawer Opened: " + drawerResponse);
-            },
-            error: function(xhr, status, error) {
-                console.error("Error opening drawer: " + error);
-            }
-        });
-
-        window.location.href = "pos_grm.php";
-    } else {
-        window.location.href = "print_bill.php?bill_id=" + response;
-    }
-},
-            error: function(xhr, status, error) {
-                alert("Failed to complete bill. Try again.");
-                $("#complete_bill").prop("disabled", false).text("Complete Bill");
-                console.error(error);
-            }
-        });
     });
+});
 
     // Add to draft click event
     $("#add_to_draft").click(function() {
