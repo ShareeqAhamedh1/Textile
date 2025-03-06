@@ -34,9 +34,9 @@ $barcodeUrl = "https://bwipjs-api.metafloor.com/?bcid=code128&text=" . urlencode
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Print Barcode</title>
     <style>
-       @media print {
+        @media print {
             @page {
-                size: 40mm 28mm; /* Adjusted to 40mm width and 28mm height */
+                size: 30mm 20mm;
                 margin: 0;
             }
             body {
@@ -54,54 +54,50 @@ $barcodeUrl = "https://bwipjs-api.metafloor.com/?bcid=code128&text=" . urlencode
         }
 
         .barcode-container {
-            width: 40mm; /* Ensures container fits within 40mm width */
-            height: 28mm; /* Ensures container fits within 28mm height */
+            width: 30mm;
+            height: 20mm;
             display: flex;
             align-items: center;
-            justify-content: flex-start; /* Align items to the left */
-            padding: 0;
+            justify-content: space-between;
+            padding: 1mm;
             box-sizing: border-box;
+            /* border: 1px solid black; */
         }
 
         .barcode-item {
-            width: 20mm; /* Adjust to fit the layout */
+            width: 22mm;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin-left: 4mm; /* Reduced space between HS code and barcode */
         }
 
         .barcode-item h4 {
-            font-size: 7px; /* Reduced font size */
-            margin: 0;
-            padding-bottom:5px; /* Removed margin */
+            font-size: 10px;
+            margin: 1px 0;
         }
 
         .barcode-item p {
-            font-size: 6px; /* Reduced font size */
-            margin: 0; 
-            padding-top:5px;/* Removed margin */
+            font-size: 9px;
+            margin: 1px 0;
         }
 
         .barcode-item img {
-            width: 35mm;
+            width: 22mm;
             height: 8mm;
             object-fit: contain;
             filter: contrast(300%) brightness(30%);
-            margin: 0; /* Reduced space between image and text */
         }
 
         .hs-code {
-            font-size: 5px;
-            width: 4mm; /* Adjusted for fit */
+            font-size: 8px;
+            width: 5mm;
             display: flex;
             align-items: center;
             justify-content: center;
             writing-mode: vertical-rl;
             transform: rotate(180deg);
             white-space: nowrap;
-            padding-top:5px;
         }
 
         .btn-print {
@@ -117,13 +113,9 @@ $barcodeUrl = "https://bwipjs-api.metafloor.com/?bcid=code128&text=" . urlencode
         }
 
         .barcode-item p:last-child {
-            font-size: 8px; /* Adjusted for better fit */
-            font-weight: bold;
-            padding-top:2px;
-        }
-        #barcode-num{
-            font-size:7px;
-        }
+    font-size: 13px; /* Adjust this value as needed */
+    font-weight: bold;
+}
     </style>
 </head>
 <body onload="window.print();">
@@ -132,11 +124,11 @@ $barcodeUrl = "https://bwipjs-api.metafloor.com/?bcid=code128&text=" . urlencode
             <p><?= htmlspecialchars($hscode) ?></p>
         </div>
         <div class="barcode-item">
-            <h4>I Style</h4>
+            <h4 id="shop-name">I Style</h4>
             
             <img src="<?= $barcodeUrl ?>" alt="Barcode">
             <p id="barcode-num"><?= htmlspecialchars($product['barcode']) ?></p>
-            <p>Rs <?= number_format($product['price']) ?>/=</p>
+            <p id="price">Rs <?= number_format($product['price']) ?>/=</p>
         </div>
     </div>
 
