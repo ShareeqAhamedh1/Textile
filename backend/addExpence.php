@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // $payment_type = $_POST['payment_type'];
 
     // Determine vendor_id based on category
-    if ($category == 'petty_cash') {
+    if ($category == 'petty_cash' || $category == 'Opening Balance') {
         $vendor_id = 0; // Petty cash has no vendor
     } else {
         $vendor_id = $_POST['vendor_id']; // Get vendor_id from form
