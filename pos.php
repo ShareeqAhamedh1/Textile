@@ -945,7 +945,7 @@ $(document).ready(function() {
     let timer;
 
     document.addEventListener("keydown", function(event) {
-        if (event.keyCode === 123 || event.keyCode === 13) { // F12 key
+        if (event.keyCode === 123) { // F12 key
             event.preventDefault(); // Prevent default behavior
 
             if ($('#paymentModal').is(':visible')) {
