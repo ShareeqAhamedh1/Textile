@@ -82,12 +82,12 @@
             <?php if ($finalTotal > 0): ?>
                 <p class="mb-1">
                     <span class="text-muted">Amount to Pay:</span>
-                    <span class="fw-bold text-danger">LKR <?= number_format($finalTotal, 2) ?></span>
+                    <span class="fw-bold text-success">LKR <?= number_format($finalTotal, 2) ?></span>
                 </p>
             <?php elseif ($balanceReturn > 0): ?>
                 <p class="mb-1">
                     <span class="fw-bold">Balance to Return:</span>
-                    <span class="text-success">LKR <?= number_format($balanceReturn, 2) ?></span>
+                    <span class="text-danger">LKR <?= number_format($balanceReturn, 2) ?></span>
                 </p>
             <?php else: ?>
                 <p class="mb-1 fw-bold text-success">No Payment Required</p>
