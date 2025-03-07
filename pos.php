@@ -119,7 +119,7 @@
                 </div>
               </div>
             </div>
-            <div class="list-group scrollable mb-4" id="showCartItems">
+            <div class="list-group mb-4" id="showCartItems">
               <!-- Cart items will be loaded here -->
             </div>
 
