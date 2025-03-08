@@ -3,90 +3,117 @@ include './backend/conn.php';
 
 $billId = $_REQUEST['bill_id'];
 $sqlGrm = "SELECT * FROM tbl_order_grm WHERE id='$billId'";
-$rsGrm = $conn->query($sqlGrm);
+$rsGrm  = $conn->query($sqlGrm);
 $rowGrm = $rsGrm->fetch_assoc();
 
-$payment_type_id = $rowGrm['payment_type'];
-$order_ref      = $rowGrm['order_ref'];
-$order_date     = $rowGrm['order_date'];
-$payment_type   = getPayment($payment_type_id);
-$cus_id         = $rowGrm['customer_id'];
+$payment_type_id     = $rowGrm['payment_type'];
+$order_ref           = $rowGrm['order_ref'];
+$order_date          = $rowGrm['order_date'];
+$payment_type        = getPayment($payment_type_id);
+$cus_id              = $rowGrm['customer_id'];
 $discount_price_bill = $rowGrm['discount_price'];
+$cash_took           = $rowGrm['cash_took'];
 
-$cash_took = $rowGrm['cash_took'];
-
+// Get customer details
 if ($cus_id != 0) {
     $cus_name    = getDataBack($conn, 'tbl_customer', 'c_id', $cus_id, 'c_name');
     $cus_phone   = getDataBack($conn, 'tbl_customer', 'c_id', $cus_id, 'c_phone');
     $cus_email   = getDataBack($conn, 'tbl_customer', 'c_id', $cus_id, 'c_email');
     $cus_address = getDataBack($conn, 'tbl_customer', 'c_id', $cus_id, 'c_address');
 } else {
-    $cus_name = "Walk-in Customer";
-    $cus_phone = $cus_email = $cus_address = "";
+    $cus_name    = "Walk-in Customer";
+    $cus_phone   = "";
+    $cus_email   = "";
+    $cus_address = "";
 }
 
-$tot_qnty = 0;
-$total = 0;
-$total_discount = 0;
-$subtotal = 0;
-$returnAmount = 0;
-$cashReturnAmount = 0;
+$tot_qnty         = 0;
+$subtotal         = 0; // Sum of (price * qty) *before* subtracting discount
+$total            = 0; // Running total net of discounts/returns
+$total_discount   = 0; // Sum of all item-level discounts
+$returnAmount     = 0; // Sum of returned items (net price - discount)
+$cashReturnAmount = 0; // Sum of items refunded in cash
 
 // Fetch order details
 $sql_ord = "SELECT * FROM tbl_order WHERE grm_ref='$billId'";
-$rs_ord = $conn->query($sql_ord);
+$rs_ord  = $conn->query($sql_ord);
 
 $items = [];
 
 if ($rs_ord->num_rows > 0) {
     while ($rowOrd = $rs_ord->fetch_assoc()) {
-        $pid      = $rowOrd['product_id'];
-        $p_name   = getDataBack($conn, 'tbl_product', 'id', $pid, 'name');
-        $p_price  = getDataBack($conn, 'tbl_product', 'id', $pid, 'price');
-	$barcode   = getDataBack($conn, 'tbl_product', 'id', $pid, 'barcode');
-        $quantity = $rowOrd['quantity'];
-        $discount = $rowOrd['discount'] ?? 0;
-        $discount = $discount * $quantity;
-        $line_total = ($p_price * $quantity) - $discount;
+        $pid        = $rowOrd['product_id'];
+        $p_name     = getDataBack($conn, 'tbl_product', 'id', $pid, 'name');
+        $p_price    = (float)getDataBack($conn, 'tbl_product', 'id', $pid, 'price');
+        $barcode    = getDataBack($conn, 'tbl_product', 'id', $pid, 'barcode');
+        $quantity   = (int)$rowOrd['quantity'];
 
-        $is_returned = false;
-        $is_cash_refund = false;
+        // If tbl_order.discount is discount per item, multiply by qty:
+        $discountPerItem = (float)($rowOrd['discount'] ?? 0);
+        $lineDiscount    = $discountPerItem * $quantity; // total discount for this line
+        $linePrice       = $p_price * $quantity;
+        $line_total      = $linePrice - $lineDiscount;
 
         // Check if item is returned or refunded in cash
-        $sqlReturn = "SELECT * FROM tbl_return_exchange WHERE or_id='" . $rowOrd['id'] . "'";
-        $rsReturn = $conn->query($sqlReturn);
+        $is_returned    = false;
+        $is_cash_refund = false;
+        $sqlReturn      = "SELECT * FROM tbl_return_exchange WHERE or_id='" . $rowOrd['id'] . "'";
+        $rsReturn       = $conn->query($sqlReturn);
+
         if ($rsReturn->num_rows > 0) {
             $rowExchange = $rsReturn->fetch_assoc();
+            // ret_or_ex_st == 1 => returned item
             if ($rowExchange['ret_or_ex_st'] == 1) {
                 $returnAmount += $line_total;
-                $is_returned = true;
-            } else if ($rowExchange['ret_or_ex_st'] == 0) {
+                $is_returned   = true;
+            }
+            // ret_or_ex_st == 0 => refunded in cash
+            else if ($rowExchange['ret_or_ex_st'] == 0) {
                 $cashReturnAmount += $line_total;
-                $is_cash_refund = true;
+                $is_cash_refund   = true;
             }
         }
 
+        // Build the display name with note on returns/refunds
+        $displayName = $p_name;
+        if ($is_returned) {
+            $displayName .= ' (Returned)';
+        } else if ($is_cash_refund) {
+            $displayName .= ' (Cash Refund)';
+        }
+
+        // Collect row info for display
         $items[] = [
-            'name' => $p_name . ($is_returned ? ' (Returned)' : ($is_cash_refund ? ' (Cash Refund)' : '')),
-            'quantity' => $quantity,
+            'name'       => $displayName,
+            'barcode'    => $barcode,
+            'quantity'   => $quantity,
             'unit_price' => $p_price,
-            'discount' => $discount,
-            'total' => $line_total,
-            'is_returned' => $is_returned,
+            'discount'   => $lineDiscount,    // total discount for this line
+            'total'      => $line_total,      // net line total
+            'is_returned'=> $is_returned,
             'is_cash_refund' => $is_cash_refund
         ];
 
-        $subtotal += $p_price * $quantity;
-        $total += $line_total;
-        $total_discount += $discount;
-        $tot_qnty += $quantity;
+        // Accumulate totals
+        $subtotal       += $linePrice;
+        $total          += $line_total;
+        $total_discount += $lineDiscount;
+        $tot_qnty       += $quantity;
     }
 }
 
-// Apply bill discount
-$totalAfterReturns = $total - $discount_price_bill - $returnAmount;
-$finalTotal = max($totalAfterReturns - $cashReturnAmount, 0);
-$balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_price_bill), 0);
+// --------------------------------------
+// Now adjust final totals with bill-level discount
+// --------------------------------------
+$totalAfterReturns = $total
+                    - $discount_price_bill  // subtract extra discount at the bill level
+                    - $returnAmount;        // subtract returned items
+$finalTotal = max($totalAfterReturns - $cashReturnAmount, 0); // also subtract cash refunds
+// If the return total is greater than the net total, show "balance" to return
+$balanceReturn = max(
+    ($returnAmount + $cashReturnAmount) - ($total - $discount_price_bill),
+    0
+);
 ?>
 
 <!DOCTYPE html>
@@ -127,10 +154,10 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
       padding-top: 5px;
       border-top: 2px solid black;
     }
-#items{
-	font-weight: 600;
-	font-size:12px;
-}
+    #items {
+      font-weight: 600;
+      font-size: 12px;
+    }
     @page {
       size: auto;
       margin: 0;
@@ -139,8 +166,7 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
   </style>
 </head>
 <body>
-<br>
-<br>
+  <br><br>
   <div class="header">
     <div class="logo-container">
       <img src="logo/b_k_logo.png" alt="Store Logo">
@@ -175,66 +201,70 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
         <th>Total</th>
       </tr>
     </thead>
-<br>
+    <br>
     <tbody>
       <?php foreach ($items as $item) { ?>
         <tr id="items">
           <td><?= $item['quantity'] ?></td>
-          <td><?= $item['name'] ?> / <?= $barcode ?></td>
-          <td>Rs <?= number_format($item['unit_price']) ?>/-</td>
-          <td>Rs <?= number_format($item['discount'] * $item['quantity']) ?>/-</td>
-          <td>Rs <?= number_format($item['is_returned'] || $item['is_cash_refund'] ? -$item['total'] : $item['total']) ?>/-</td>
+          <!-- Display product name & barcode -->
+          <td><?= $item['name'] ?> / <?= $item['barcode'] ?></td>
+          <td>Rs <?= number_format($item['unit_price'], 2) ?>/-</td>
+          <!-- Show the total discount for the line (already multiplied by qty) -->
+          <td>Rs <?= number_format($item['discount'], 2) ?>/-</td>
+          <!-- If returned/refunded, display as negative -->
+          <td>Rs <?= number_format(($item['is_returned'] || $item['is_cash_refund']) ? -$item['total'] : $item['total'], 2) ?>/-</td>
         </tr>
       <?php } ?>
     </tbody>
   </table>
 
   <div class="totals">
-    <div><strong>Total Quantity:<?= $tot_qnty ?></strong> </div>
-    <div><strong>Subtotal: Rs <?= number_format($subtotal) ?>/-</strong></div>
+    <div><strong>Total Quantity: <?= $tot_qnty ?></strong></div>
+    <div><strong>Subtotal: Rs <?= number_format($subtotal, 2) ?>/-</strong></div>
 
     <?php if ($total_discount > 0 || $discount_price_bill > 0) { ?>
-      <div><strong>Total Discount: Rs <?= number_format($total_discount + $discount_price_bill) ?>/-</strong></div>
+      <div><strong>Total Discount: Rs <?= number_format($total_discount + $discount_price_bill, 2) ?>/-</strong></div>
     <?php } ?>
 
     <?php if ($returnAmount > 0) { ?>
-      <div><strong>Return Amount: -Rs <?= number_format($returnAmount) ?>/-</strong></div>
+      <div><strong>Return Amount: -Rs <?= number_format($returnAmount, 2) ?>/-</strong></div>
     <?php } ?>
 
     <?php if ($cashReturnAmount > 0) { ?>
-      <div><strong>Cash Refund: -Rs <?= number_format($cashReturnAmount) ?>/-</strong></div>
+      <div><strong>Cash Refund: -Rs <?= number_format($cashReturnAmount, 2) ?>/-</strong></div>
     <?php } ?>
 
-    <div><strong>Final Total: Rs <?= number_format($finalTotal) ?>/-</strong></div>
+    <div><strong>Final Total: Rs <?= number_format($finalTotal, 2) ?>/-</strong></div>
 
     <?php if ($balanceReturn > 0) { ?>
-      <div><strong>Balance to Return: Rs <?= number_format($balanceReturn) ?>/-</strong></div>
+      <div><strong>Balance to Return: Rs <?= number_format($balanceReturn, 2) ?>/-</strong></div>
     <?php } ?>
-    <?php if($cash_took > 0){ ?>
-      <div><strong>Cash Recived</strong> Rs <?= number_format($cash_took) ?>/-</div>
-      <div><strong>Balance Paid</strong> Rs <?= number_format($cash_took - $finalTotal) ?>/-</div>
+
+    <?php if ($cash_took > 0) {
+        $balancePaid = $cash_took - $finalTotal;
+    ?>
+      <div><strong>Cash Received: </strong> Rs <?= number_format($cash_took, 2) ?>/-</div>
+      <div><strong>Balance Paid: </strong> Rs <?= number_format($balancePaid, 2) ?>/-</div>
     <?php } ?>
   </div>
+
   <div class="footer">
-    <div>
-    <p>Exchange of any item in its original condition with receipt is possible within 7 days </p>
-    <p>Thank you! Come again.</p></div>
-  </div>
-<br>
-<br>
+    <p>Exchange of any item in its original condition (with receipt) is possible within 7 days.</p>
+    <p>Thank you! Come again.</p>
+  </div>
+
+  <br><br>
   <script>
-  window.onload = function() {
-  // Set the onafterprint event before calling print
-  window.onafterprint = function() {
-      window.location.href = "pos.php"; // Redirect after printing
-  };
-
-  // Delay to ensure the page is fully loaded before printing
-  setTimeout(function() {
-      window.print();
-  }, 500);
-};
-
+    window.onload = function() {
+      // Set the onafterprint event before calling print
+      window.onafterprint = function() {
+          window.location.href = "pos.php"; // Redirect after printing
+      };
+      // Slight delay to ensure content is fully loaded
+      setTimeout(function() {
+          window.print();
+      }, 500);
+    };
   </script>
 </body>
 </html>

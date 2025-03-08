@@ -105,6 +105,7 @@ while ($ord = $res_orders_all->fetch_assoc()) {
     $p_id      = $ord['product_id'];
     $qty       = (int)$ord['quantity'];
     $item_disc = (float)$ord['discount'];
+    $item_disc *=$qty;
 
     // Get product price (no join)
     $sql_p = "SELECT price FROM tbl_product WHERE id = '$p_id'";
@@ -155,20 +156,21 @@ $rs_ret_all = $conn->query($sql_return_all);
 while ($retRow = $rs_ret_all->fetch_assoc()) {
     // retRow[ 'or_id' ] => find that order
     $or_id = $retRow['or_id'];
-    $sql_o = "SELECT product_id, quantity FROM tbl_order WHERE id = '$or_id'";
+    $sql_o = "SELECT product_id, quantity,discount FROM tbl_order WHERE id = '$or_id'";
     $res_o = $conn->query($sql_o);
     $row_o = $res_o->fetch_assoc();
     if (!$row_o) continue;
 
     $p_id = $row_o['product_id'];
     $qty  = (int)$row_o['quantity'];
+    $discountRet  = (int)$row_o['discount'];
 
     // find product price
     $sql_p = "SELECT price FROM tbl_product WHERE id = '$p_id'";
     $res_p = $conn->query($sql_p);
     $row_p = $res_p->fetch_assoc();
     $price = ($row_p) ? (float)$row_p['price'] : 0;
-
+    $price -=$discountRet;
     $totalReturns += ($price * $qty);
 }
 
