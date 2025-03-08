@@ -181,7 +181,7 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
           <td><?= $item['quantity'] ?></td>
           <td><?= $item['name'] ?> / <?= $barcode ?></td>
           <td>Rs <?= number_format($item['unit_price']) ?>/-</td>
-          <td>Rs <?= number_format($item['discount']) ?>/-</td>
+          <td>Rs <?= number_format($item['discount'] * $item['quantity']) ?>/-</td>
           <td>Rs <?= number_format($item['is_returned'] || $item['is_cash_refund'] ? -$item['total'] : $item['total']) ?>/-</td>
         </tr>
       <?php } ?>
