@@ -114,7 +114,7 @@ if ($rs->num_rows > 0) {
     <?php elseif ($refund > 0): ?>
         <div>
             <strong>Refund to Customer:</strong>
-            LKR <?= number_format($refund, 2) ?>
+            LKR <?= number_format($refund-$totDiscount, 2) ?>
         </div>
     <?php else: ?>
         <div>
