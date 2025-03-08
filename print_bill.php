@@ -46,6 +46,7 @@ if ($rs_ord->num_rows > 0) {
 	$barcode   = getDataBack($conn, 'tbl_product', 'id', $pid, 'barcode');
         $quantity = $rowOrd['quantity'];
         $discount = $rowOrd['discount'] ?? 0;
+        $discount = $discount * $quantity;
         $line_total = ($p_price * $quantity) - $discount;
 
         $is_returned = false;
