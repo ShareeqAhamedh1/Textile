@@ -8,9 +8,7 @@ $search_query = isset($_GET['search']) ? $_GET['search'] : '';
 $sql = "SELECT g.*, c.c_name, c.c_phone
         FROM tbl_order_grm g
         LEFT JOIN tbl_customer c ON g.customer_id = c.c_id
-        WHERE g.order_ref LIKE '%$search_query%'
-           OR c.c_name LIKE '%$search_query%'
-           OR c.c_phone LIKE '%$search_query%'
+        WHERE g.order_ref LIKE '%$search_query%' OR c.c_name LIKE '%$search_query%' OR c.c_phone LIKE '%$search_query%'
         ORDER BY g.id DESC";
 
 $rs = $conn->query($sql);
@@ -19,14 +17,14 @@ $rs = $conn->query($sql);
 if ($rs->num_rows > 0) {
     while ($row = $rs->fetch_assoc()) {
         $orderStatus = $row['order_st'];
-        $orSt = ($orderStatus == 0) ? "DRAFT" : "Completed";
+        $orSt = $orderStatus == 0 ? "DRAFT" : "Completed";
 
-        $ref = intval($row['id']); // Ensure ID is always an integer
-        $customer      = htmlspecialchars($row['c_name'] ?? 'N/A');
+        $ref = intval($row['id']);
+        $customer = htmlspecialchars($row['c_name'] ?? 'N/A');
         $customerPhone = htmlspecialchars($row['c_phone'] ?? 'N/A');
         ?>
         <tr>
-            <td><?= htmlspecialchars($row['order_ref']) ?> - '<?= $orSt ?>' </td>
+            <td><?= htmlspecialchars($row['order_ref']) ?> - <?= $orSt ?></td>
             <td><?= $customer ?></td>
             <td><?= $customerPhone ?></td>
             <td><?= htmlspecialchars($row['order_date']) ?></td>
@@ -35,58 +33,46 @@ if ($rs->num_rows > 0) {
             </td>
 
             <?php
-            // -- Initialize calculations
-            $subtotal       = 0;  // total net of item-level discounts
-            $returnedValue  = 0;  // total net of item-level discounts for returned items
-            $lineDiscTotal  = 0;  // sum of item-level discounts (multiplied by qty)
+            $total = 0;
+            $returnedValue = 0;
+            $totDiscount = 0;
 
-            // --- Get line items for this order
             $sqlS = "SELECT * FROM tbl_order WHERE grm_ref='$ref'";
-            $rsS  = $conn->query($sqlS);
+            $rsS = $conn->query($sqlS);
 
             if ($rsS && $rsS->num_rows > 0) {
                 while ($rowS = $rsS->fetch_assoc()) {
-                    $id             = $rowS['id'];
-                    $pid            = $rowS['product_id'];
-                    $qty            = (int)$rowS['quantity'];
-                    $discountPerItem= (float)$rowS['discount'];  // discount per item
-                    $priceP         = (float)getDataBack($conn, 'tbl_product', 'id', $pid, 'price');
+                    $id = $rowS['id'];
+                    $pid = $rowS['product_id'];
+                    $qty = $rowS['quantity'];
+                    $discountPerItem = $rowS['discount'];
+                    $priceP = getDataBack($conn, 'tbl_product', 'id', $pid, 'price');
 
-                    // Multiply discount * quantity
+                    $linePrice = $priceP * $qty;
                     $lineDiscount = $discountPerItem * $qty;
-                    $linePrice    = $priceP * $qty;
+                    $lineTotal = $linePrice - $lineDiscount;
 
-                    // Check if item is returned
-                    $sqlReturn  = "SELECT * FROM tbl_return_exchange WHERE or_id = '$id'";
-                    $rsReturn   = $conn->query($sqlReturn);
+                    $sqlReturn = "SELECT * FROM tbl_return_exchange WHERE or_id = '$id'";
+                    $rsReturn = $conn->query($sqlReturn);
 
-                    if ($rsReturn && $rsReturn->num_rows > 0) {
-                        // If returned, add to returnedValue
-                        $returnedValue += ($linePrice - $lineDiscount);
+                    if ($rsReturn->num_rows > 0) {
+                        $returnedValue += $lineTotal;
                     } else {
-                        // Otherwise, add to subtotal
-                        $subtotal += ($linePrice - $lineDiscount);
+                        $total += $lineTotal;
                     }
-                    // Keep track of total discount on items
-                    $lineDiscTotal += $lineDiscount;
+                    $totDiscount += $lineDiscount;
                 }
             }
 
-            // Order-level discount (if any) from tbl_order_grm
-            $orderLevelDiscount = (float)$row['discount_price'];
+            // Add global discount from order_grm table
+            $totDiscount += $row['discount_price'];
 
-            // We’ll add item-level discount + order-level discount to get the total discount
-            $totDiscount = $lineDiscTotal + $orderLevelDiscount;
+            $billValue = $total;
+            $billValue = max($billValue, 0); // Prevent negative values
 
-            // Subtract the order-level discount from the subtotal
-            $billValue = $subtotal - $orderLevelDiscount;
-            if ($billValue < 0) {
-                $billValue = 0; // Prevent negative if discount exceeds total
-            }
-
-            // -- Determine cash paid vs. refund
             $cashPaid = 0;
-            $refund   = 0;
+            $refund = 0;
+
             if ($billValue > $returnedValue) {
                 $cashPaid = $billValue - $returnedValue;
             } elseif ($returnedValue > $billValue) {
@@ -95,7 +81,6 @@ if ($rs->num_rows > 0) {
             ?>
 
             <td>
-                <!-- Display Section -->
                 <div>
                     <strong>Total Bill Value:</strong>
                     LKR <?= number_format($billValue, 2) ?>
@@ -123,7 +108,6 @@ if ($rs->num_rows > 0) {
                 <?php elseif ($refund > 0): ?>
                     <div>
                         <strong>Refund to Customer:</strong>
-                        <!-- No need to subtract total discount again; it's already accounted for -->
                         LKR <?= number_format($refund, 2) ?>
                     </div>
                 <?php else: ?>
@@ -134,20 +118,19 @@ if ($rs->num_rows > 0) {
             </td>
 
             <td>
-                <a class="me-3" href="backend/gotopos.php?grm_id=<?= $ref ?>" >
-                    <button type="button" class="btn btn-secondary btn-sm" name="button">VIEW</button>
+                <a class="me-3" href="backend/gotopos.php?grm_id=<?= $ref ?>">
+                    <button type="button" class="btn btn-secondary btn-sm">VIEW</button>
                 </a>
                 <a href="print_bill.php?bill_id=<?= $ref ?>" target="_blank">
                     <span style="color:#f74e05;font-weight:bold;">Print Bill</span>
                 </a>
             </td>
-
             <td>
-              <?php if($orderStatus == 0){ ?>
-                <a onclick="del_order(<?= $ref ?>)" class="me-3 confirm-text" href="javascript:void(0);">
-                    <img src="assets/img/icons/delete.svg" alt="Delete">
-                </a>
-              <?php } ?>
+                <?php if ($orderStatus == 0): ?>
+                    <a onclick="del_order(<?= $ref ?>)" class="me-3 confirm-text" href="javascript:void(0);">
+                        <img src="assets/img/icons/delete.svg" alt="Delete">
+                    </a>
+                <?php endif; ?>
             </td>
         </tr>
     <?php
