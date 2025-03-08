@@ -383,6 +383,7 @@ while($oRow = $res_today_orders_3->fetch_assoc()){
     $p_id      = $oRow['product_id'];
     $qty       = (int)$oRow['quantity'];
     $item_disc = (float)$oRow['discount'];
+    $item_disc = $qty * $item_disc;
 
     // find the grm row
     $sql_g4 = "SELECT payment_type, discount_price, order_date
