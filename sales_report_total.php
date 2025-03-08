@@ -47,8 +47,8 @@ $tot_cost =0;
     <div class="col-3 d-flex">
         <div class="dash-count das1">
             <div class="dash-counts">
-                <h4 id="tot_sales"></h4>
-                <h5>Total Sales Value</h5>
+                <h4 id="tot_sales_b_discount"></h4>
+                <h5>Total Sales Value Before Discount</h5>
                 <p>(From <?= htmlspecialchars($date_sel_one) ?> To <?= htmlspecialchars($date_sel_two) ?>) </p>
             </div>
             <div class="dash-imgs">
@@ -59,8 +59,8 @@ $tot_cost =0;
     <div class="col-3 d-flex">
         <div class="dash-count das2">
             <div class="dash-counts">
-                <h4 id="tot_sales_b_discount"></h4>
-                <h5>Total Sales Value Before Discount</h5>
+                <h4 id="tot_sales"></h4>
+                <h5>Total Sales Value</h5>
                 <p>(From <?= htmlspecialchars($date_sel_one) ?> To <?= htmlspecialchars($date_sel_two) ?>) </p>
             </div>
             <div class="dash-imgs">
@@ -119,6 +119,7 @@ $tot_cost =0;
                 $unit_price = (float) $row_order_pos['price'];
                 $costPrice = (float) $row_order_pos['cost_price'];
                 $discount = (float) $row_order_pos['discount'];
+                $discount *=$quantity;
                 $bill_date = date("Y-m-d", strtotime($row_order_pos['bill_date']));
 
                 // Calculate Discounted Price
