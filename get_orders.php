@@ -59,19 +59,18 @@ if ($rs->num_rows > 0) {
             $sqlReturn = "SELECT * FROM tbl_return_exchange WHERE or_id = '$id'";
             $rsReturn  = $conn->query($sqlReturn);
 
-            if ($rsReturn && $rsReturn->num_rows > 0) {
-                $returnedValue += $linePrice;
+            if ($rsReturn->num_rows > 0) {
+                $returnedValue += $linePrice  - $discount;
             } else {
-                $total += $linePrice;
+                $total += $linePrice - $discount;
             }
 
-            $totDiscount += $discount;
         }
     }
 
     $totDiscount += $row['discount_price'];
 
-    $billValue = $total - $totDiscount;
+    $billValue = $total;
     if ($billValue < 0) {
         $billValue = 0; // prevent negative if discounts exceed total
     }
