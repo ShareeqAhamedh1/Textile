@@ -70,6 +70,7 @@ if ($rs_ord->num_rows > 0) {
             'name' => $p_name . ($is_returned ? ' (Returned)' : ($is_cash_refund ? ' (Cash Refund)' : '')),
             'quantity' => $quantity,
             'unit_price' => $p_price,
+            'barcode'=>$barcode,
             'discount' => $line_discount,
             'total' => $line_total,
             'is_returned' => $is_returned,
@@ -179,7 +180,7 @@ $balanceReturn = max(($returnAmount + $cashReturnAmount) - ($total - $discount_p
       <?php foreach ($items as $item) { ?>
         <tr id="items">
           <td><?= $item['quantity'] ?></td>
-          <td><?= $item['name'] ?> / <?= $barcode ?></td>
+          <td><?= $item['name'] ?> / <?= $item['barcode'] ?></td>
           <td>Rs <?= number_format($item['unit_price']) ?>/-</td>
           <td>Rs <?= number_format($item['discount']) ?>/-</td>
           <td>Rs <?= number_format($item['is_returned'] || $item['is_cash_refund'] ? -$item['total'] : $item['total']) ?>/-</td>
