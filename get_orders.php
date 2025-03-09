@@ -53,7 +53,7 @@ if ($rs->num_rows > 0) {
 
                     $linePrice = $priceP * $qty;
                     $lineDiscount = $discountPerItem * $qty;
-                    $lineTotal = $linePrice - $lineDiscount;
+                    $lineTotal = $linePrice;
 
                     $sqlReturn = "SELECT * FROM tbl_return_exchange WHERE or_id = '$id'";
                     $rsReturn = $conn->query($sqlReturn);
@@ -70,7 +70,7 @@ if ($rs->num_rows > 0) {
             // Add global discount from order_grm table
             $totDiscount += $row['discount_price'];
 
-            $billValue = $total;
+            $billValue = $total- $totDiscount;
             $billValue = max($billValue, 0); // Prevent negative values
 
             $cashPaid = 0;
