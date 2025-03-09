@@ -6,7 +6,7 @@
 			<!-- Header -->
 
            <!-- Sidebar -->
-			<?php include './layouts/sidebar.php'; ?>
+			<?php include './layouts/sidebar.php';  ?>
 			<!-- /Sidebar -->
 
 			<div class="page-wrapper">
@@ -14,7 +14,7 @@
 					<div class="page-header">
 						<div class="page-title">
 							<h4>Orders</h4>
-							<h6>Place an order</h6>
+							<h6>Place an order  </h6>
 						</div>
 					</div>
 					<!-- /add -->
@@ -307,15 +307,27 @@
     </body>
 </html>
 <?php
-	if(isset($_SESSION['grm_ref'])){
-		$gid = $_SESSION['grm_ref'];
 
-		$sql = "SELECT * FROM tbl_order WHERE grm_ref='$gid'";
-		$rs = $conn->query($sql);
-		if($rs->num_rows == 0){
-			$sql="DELETE FROM tbl_order_grm WHERE id='$gid'";
-			$rs=$conn->query($sql);
-		}
+
+$sql = "SELECT id FROM tbl_order_grm WHERE order_st = 5";
+$rs = $conn->query($sql);
+
+if ($rs->num_rows > 0) {
+    while ($row = $rs->fetch_assoc()) {
+        $gid = $row['id'];
+
+        // Delete from tbl_order first
+        $sql = "DELETE FROM tbl_order WHERE id='$gid'";
+        $conn->query($sql);
+
+        // Delete from tbl_order_grm
+        $sql = "DELETE FROM tbl_order_grm WHERE id='$gid'";
+        $conn->query($sql);
+    }
+}
+
+
+	if(isset($_SESSION['grm_ref'])){
 		unset($_SESSION['grm_ref']);
 	}
  ?>

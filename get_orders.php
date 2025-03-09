@@ -105,11 +105,6 @@ if ($rs->num_rows > 0) {
                         <strong>Cash Paid By Customer:</strong>
                         LKR <?= number_format($cashPaid, 2) ?>
                     </div>
-                <?php elseif ($refund > 0): ?>
-                    <div>
-                        <strong>Refund to Customer:</strong>
-                        LKR <?= number_format($refund, 2) ?>
-                    </div>
                 <?php else: ?>
                     <div>
                         <strong>Cash Paid / Refund:</strong> LKR 0.00
