@@ -25,7 +25,8 @@
 						</div>
 						<div class="col-12">
 							<button class="btn btn-success" name="button" onclick="changeSlot()">Sales</button> ||||
-							<button class="btn btn-primary" name="button" onclick="selectDateFull()">Stock</button>
+							<button class="btn btn-primary" name="button" onclick="selectDateFull()">Stock</button> |||
+							<button class="btn btn-secondary" name="button" onclick="selectDateExpesnses()">Expenses</button>
 							<br><br>
 							<button class="btn btn-success" name="button" onclick="ExportToExcel('xlsx')">Export To Excel</button>
 							<br><br>
@@ -53,7 +54,7 @@
 		<!-- /Main Wrapper -->
 
 		<?php include 'layouts/footer.php' ?>
-	
+
 		<script type="text/javascript">
 
 		var table_id = 'sales_report_id';
@@ -109,6 +110,23 @@
 									sel_date_t:sel_date_to
 								});
 								table_id = 'sales_report_uni_id';
+			}
+
+			function selectDateExpesnses(){
+				var sel_date_from = document.getElementById('sel_date_from').value;
+				var sel_date_to = document.getElementById('sel_date_to').value;
+
+				if(sel_date_from == ""){
+					alert('From Value Cannot be empty');
+					document.getElementById('sel_date_to').value = "";
+					return false;
+				}
+
+								$('#call_center_table').load('ajax/expense_report.php',{
+									sel_date_f:sel_date_from,
+									sel_date_t:sel_date_to
+								});
+								table_id = 'expense_report_id';
 			}
 		</script>
 	</body>
