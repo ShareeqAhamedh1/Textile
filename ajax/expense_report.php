@@ -43,7 +43,7 @@
 
         <br>
         <div class="alert alert-primary">
-          <h3 class="text-dark">Total Expenses Between <?= $date_sel_one ?> & <?= $date_sel_one ?> : <?= $totalExpenses ?> </h3>
+          <h6 class="text-dark">Total Expenses Between <?= $date_sel_one ?> & <?= $date_sel_one ?> : <span style="font-weight:bold;">LKR <?= number_format($totalExpenses,2) ?></span> </h6>
         </div>
 
         <?php
