@@ -477,6 +477,7 @@ while($re = $resultReturn->fetch_assoc()){
 $till_balance = ($total_payments_today['cash'])
               - $tot_expenses_today
               - $total_amount_return
+              -$bill_discount
               + $total_daily_cash_in;
 
 ?>
