@@ -44,6 +44,12 @@
           <a href="sales_report.php" ><img src="assets/img/icons/sale.svg" alt="img"><span> Sales Report</span> </a>
         </li>
 
+        <li class="<?php if($pg_name=='sales_report_filter.php'){echo('active');} ?>">
+            <a href="sales_report_filter.php">
+                <img src="assets/img/icons/filter.svg" alt="img">
+                <span> Item Tracking</span>
+            </a>
+        </li>
 
 
 

@@ -25,23 +25,23 @@
 										if($rs_prod->num_rows > 0){
 											while($row_prod = $rs_prod->fetch_assoc()){
 									 ?>
-									<?php 
-													$subCatId=$row_prod['sub_category_id'];
-													$sqlProdName="SELECT * FROM tbl_sub_category WHERE id='$subCatId'";
+									<?php
+													$subCatId=$row_prod['category_id'];
+													$sqlProdName="SELECT * FROM tbl_category WHERE id='$subCatId'";
 													$rsProdName=$conn->query($sqlProdName);
 													if($rsProdName->num_rows>0){
 													$rowsProdName=$rsProdName->fetch_assoc();
 													$prodName=$rowsProdName['name'];
 													?>
 
-												<option value="<?= $row_prod['id'] ?>"><?= $prodName ?></option>
+												<option value="<?= $row_prod['id'] ?>"><?= $row_prod['name'] ?></option>
 
 													<?php
 													}
-												
+
 												?>
 
-									
+
 								<?php } } ?>
 								</select>
 						</div>
@@ -72,7 +72,7 @@
 		<!-- /Main Wrapper -->
 
 		<?php include 'layouts/footer.php' ?>
-		
+
 		<script type="text/javascript">
 
 
