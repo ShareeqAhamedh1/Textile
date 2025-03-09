@@ -11,13 +11,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $currDate=date('Y-m-d');
     // Fetch yesterday's closing balance as today's opening balance
 
-      $sql_opening_balance = "SELECT * FROM tbl_expenses WHERE expense_date = '$expense_date' AND category='Opening Balance'";
+      $sql_opening_balance = "SELECT * FROM tbl_expenses WHERE expense_date = '$expense_date' AND category='$category'";
       $rs_opening_balance = $conn->query($sql_opening_balance);
       if ($rs_opening_balance->num_rows > 0) {
           header("Location: ../manage_expenses.php?status=fail");
           exit();
       }
-  
+
 
 
 
