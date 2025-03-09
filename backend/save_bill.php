@@ -17,6 +17,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if(isset($_SESSION['c_id'])){
       $cid =$_SESSION['c_id'];
+      if($payment_method == 3){
+        $sqlPay = "INSERT INTO tbl_customer_payments (c_id,cp_description,cp_amount) VALUES ('$cid','Advance Payment','$cash_took')";
+        $rsPay=$conn->query($sqlPay);
+      }
     }
     else {
       $cid =0;

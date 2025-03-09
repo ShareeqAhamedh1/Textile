@@ -5,7 +5,7 @@ include './backend/conn.php';
 $search_query = isset($_GET['search']) ? $_GET['search'] : '';
 
 // Modify the SQL query to include a search filter for customer name or reference number
-$sql = "SELECT g.*, c.c_name, c.c_phone
+$sql = "SELECT g.*, c.c_name, c.c_phone,c.c_id
         FROM tbl_order_grm g
         LEFT JOIN tbl_customer c ON g.customer_id = c.c_id
         WHERE g.order_ref LIKE '%$search_query%' OR c.c_name LIKE '%$search_query%' OR c.c_phone LIKE '%$search_query%'
@@ -22,6 +22,9 @@ if ($rs->num_rows > 0) {
         $ref = intval($row['id']);
         $customer = htmlspecialchars($row['c_name'] ?? 'N/A');
         $customerPhone = htmlspecialchars($row['c_phone'] ?? 'N/A');
+        $payType=$row['payment_type'];
+        $c_id = $row['c_id'];
+        $cashTook =$row['cash_took'];
         ?>
         <tr>
             <td><?= htmlspecialchars($row['order_ref']) ?> - <?= $orSt ?></td>
@@ -102,6 +105,21 @@ if ($rs->num_rows > 0) {
 
                 <?php if ($cashPaid > 0): ?>
                     <div>
+                      <?php
+                      $cpaid=0;
+                      if($payType == 3){
+                        $cpaid = $cashPaid-$cashTook;
+                        $creditAmount=$cpaid;
+
+                        $cashPaid=$cashTook;
+                        ?>
+                        <div>
+                            <strong>Credit Amount:</strong> LKR <?= number_format($creditAmount,2) ?>
+                        </div>
+                        <?php
+                      }
+
+                       ?>
                         <strong>Cash Paid By Customer:</strong>
                         LKR <?= number_format($cashPaid, 2) ?>
                     </div>
