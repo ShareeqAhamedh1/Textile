@@ -107,11 +107,11 @@ $tot_cost =0;
 
                 $discountBill = getDataBack($conn,'tbl_order_grm','id',$grmRef,'discount_price');
 
-                $sqlDisc= "SELECT * FROM tbl_order WHERE grm_ref='$grmRef' AND ref_st=0";
+                $sqlDisc= "SELECT * FROM tbl_order WHERE grm_ref='$grmRef' AND ref_st IS NULL";
                 $rsDisc = $conn->query($sqlDisc);
                 $totalItemsDisc = $rsDisc->num_rows;
 
-
+                $discountPerItem = ($totalItemsDisc > 0) ? ($discountBill / $totalItemsDisc) : 0;
 
 
                 $product_name = htmlspecialchars($row_order_pos['product_name']);
@@ -123,7 +123,7 @@ $tot_cost =0;
                 $bill_date = date("Y-m-d", strtotime($row_order_pos['bill_date']));
 
                 // Calculate Discounted Price
-                $discount_amount = $discount;
+                $discount_amount = $discount + $discountPerItem;
                 $final_price = max(0, $unit_price);
 
                 // Totals Calculation
@@ -158,5 +158,5 @@ $tot_cost =0;
     document.getElementById('tot_qnty').innerHTML = "<?= number_format($tot_qnty) ?>";
     document.getElementById('tot_sales').innerHTML = "Rs.<?= number_format($tot_bill_dis, 2) ?>/-";
     document.getElementById('tot_sales_b_discount').innerHTML = "Rs.<?= number_format($tot_bill, 2) ?>/-";
-    document.getElementById('profit_loss').innerHTML = "Rs.<?= number_format($tot_cost, 2) ?>/-";
+    document.getElementById('profit_loss').innerHTML = "Rs.<?= number_format($tot_bill_dis - $tot_cost, 2) ?>/-";
 </script>
