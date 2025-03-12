@@ -25,6 +25,7 @@ if ($cus_id != 0) {
     $cus_phone = $cus_email = $cus_address = "";
 }
 
+$tot_do=0;
 $tot_qnty = 0;
 $total = 0;
 $total_discount = 0;
