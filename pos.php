@@ -1,6 +1,6 @@
 <?php
   include 'backend/conn.php';
-
+$new=0;
   if (!isset($_SESSION['grm_ref'])) {
       $order_ref = generateOrderRef($conn);
       $sqlCreate = "INSERT INTO tbl_order_grm (order_ref, order_st) VALUES ('$order_ref', 5)";
