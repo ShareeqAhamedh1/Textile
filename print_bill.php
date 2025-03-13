@@ -260,7 +260,7 @@ $finalTotal = max($grossTotal, 0); // never go below 0
         <div><strong>Change to Customer: Rs <?= number_format($balanceDifference) ?>/-</strong></div>
       <?php } elseif ($balanceDifference < 0) { ?>
         <!-- Customer underpaid, so they owe this difference -->
-        <div><strong>Remaining Customer Credit (Owed): Rs <?= number_format(abs($balanceDifference)) ?>/-</strong></div>
+        <div><strong>Customer Credit: Rs <?= number_format(abs($balanceDifference)) ?>/-</strong></div>
       <?php } else { ?>
         <!-- Exactly paid -->
         <div><strong>Balance Paid in Full</strong></div>
