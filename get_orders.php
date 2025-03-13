@@ -39,6 +39,8 @@ if ($rs->num_rows > 0) {
             $total = 0;
             $returnedValue = 0;
             $totDiscount = 0;
+            $retDisc =0;
+            $billDisc=0;
 
             $sqlS = "SELECT * FROM tbl_order WHERE grm_ref='$ref'";
             $rsS = $conn->query($sqlS);
@@ -141,7 +143,7 @@ if ($rs->num_rows > 0) {
                 </a>
             </td>
             <td>
-                <?php if ($orderStatus != 2345): ?>
+                <?php if ($orderStatus == 0): ?>
                     <a onclick="del_order(<?= $ref ?>)" class="me-3 confirm-text" href="javascript:void(0);">
                         <img src="assets/img/icons/delete.svg" alt="Delete">
                     </a>

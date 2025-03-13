@@ -1,6 +1,7 @@
 <?php
 include '../backend/conn.php';
 $grm_id = $_SESSION['grm_ref'];
+$tot_qnty=0;
 
 $sql = "SELECT * FROM tbl_order WHERE grm_ref='$grm_id' ORDER BY id DESC";
 $rs = $conn->query($sql);
@@ -9,7 +10,14 @@ $rs = $conn->query($sql);
 if ($rs->num_rows > 0) {
     ?>
     <div class="card shadow-sm border rounded p-3 mb-3">
-        <h5 class="fw-bold mb-3"><i class="fas fa-boxes"></i> Current Stock</h5>
+        <div class="row">
+          <div class="col-lg-4">
+            <h5 class="fw-bold mb-3"><i class="fas fa-table"></i> Total Rows: <span id="rows"><?= $rs->num_rows ?></span> </h5>
+          </div>
+          <div class="col-lg-4">
+            <h5 class="fw-bold mb-3"><i class="fas fa-boxes"></i> Total Quantity: <span id="quantityTot"></span> </h5>
+          </div>
+        </div>
         <div class="list-group">
             <?php
             while ($row = $rs->fetch_assoc()) {
@@ -30,6 +38,7 @@ if ($rs->num_rows > 0) {
                     $rowReturn = $rsReturn->fetch_assoc();
                     $exchange_st = $rowReturn['ret_or_ex_st'];
                 }
+                $tot_qnty +=$qty;
 
                 // Stock Level Indicators
                 $stockBadge = '<span class="badge bg-success">In Stock</span>';
@@ -107,3 +116,10 @@ if ($rs->num_rows > 0) {
     <?php
 }
 ?>
+
+<script type="text/javascript">
+  function updateQntyTot(){
+    document.getElementById('quantityTot').innerHTML = <?= $tot_qnty ?>;
+  }
+  updateQntyTot();
+</script>
