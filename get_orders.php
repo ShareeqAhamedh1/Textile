@@ -53,15 +53,17 @@ if ($rs->num_rows > 0) {
 
                     $linePrice = $priceP * $qty;
                     $lineDiscount = $discountPerItem * $qty;
-                    $lineTotal = $linePrice;
+                    $lineTotal = $linePrice - $lineDiscount;
 
                     $sqlReturn = "SELECT * FROM tbl_return_exchange WHERE or_id = '$id'";
                     $rsReturn = $conn->query($sqlReturn);
 
                     if ($rsReturn->num_rows > 0) {
                         $returnedValue += $lineTotal;
+                        $retDisc +=$lineDiscount;
                     } else {
                         $total += $lineTotal;
+                        $billDisc +=$lineDiscount;
                     }
                     $totDiscount += $lineDiscount;
                 }
@@ -70,7 +72,7 @@ if ($rs->num_rows > 0) {
             // Add global discount from order_grm table
             $totDiscount += $row['discount_price'];
 
-            $billValue = $total- $totDiscount;
+            $billValue = $total;
             $billValue = max($billValue, 0); // Prevent negative values
 
             $cashPaid = 0;
@@ -86,22 +88,22 @@ if ($rs->num_rows > 0) {
             <td>
                 <div>
                     <strong>Total Bill Value:</strong>
-                    LKR <?= number_format($billValue, 2) ?>
-                </div>
+                    LKR <?= number_format($billValue, 2) ?> <?php if ($retDisc != 0): ?> (Dsc: LKR. <?= number_format($billDisc,2) ?>)  <?php endif; ?>
+                </div> <hr style="margin-top:5px;">
 
                 <?php if ($returnedValue > 0): ?>
                     <div>
                         <strong>Returned Item Value:</strong>
-                        LKR <?= number_format($returnedValue, 2) ?>
-                    </div>
+                        LKR <?= number_format($returnedValue, 2) ?> <?php if ($retDisc != 0): ?> (Dsc: LKR. <?= number_format($retDisc,2) ?>)  <?php endif; ?>
+                    </div> <hr style="margin-top:5px;">
                 <?php endif; ?>
 
                 <?php if ($totDiscount > 0): ?>
                     <div>
                         <strong>Discount Applied:</strong>
                         LKR <?= number_format($totDiscount, 2) ?>
-                    </div>
-                <?php endif; ?>
+                    </div> <hr style="margin-top:5px;">
+                  <?php endif; ?>
 
                 <?php if ($cashPaid > 0): ?>
                     <div>
@@ -139,7 +141,7 @@ if ($rs->num_rows > 0) {
                 </a>
             </td>
             <td>
-                <?php if ($orderStatus == 0): ?>
+                <?php if ($orderStatus != 2345): ?>
                     <a onclick="del_order(<?= $ref ?>)" class="me-3 confirm-text" href="javascript:void(0);">
                         <img src="assets/img/icons/delete.svg" alt="Delete">
                     </a>
