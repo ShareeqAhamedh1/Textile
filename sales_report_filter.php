@@ -34,7 +34,7 @@
 													$prodName=$rowsProdName['name'];
 													?>
 
-												<option value="<?= $row_prod['id'] ?>"><?= $row_prod['name'] ?></option>
+												<option value="<?= $row_prod['id'] ?>"><?= $row_prod['name'] ?> (<?= $row_prod['barcode'] ?>) </option>
 
 													<?php
 													}
