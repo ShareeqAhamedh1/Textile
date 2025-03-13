@@ -72,6 +72,9 @@ if ($rs_ord->num_rows > 0) {
                 $is_cash_refund = true;
             }
         }
+        else {
+          $subtotal += $line_subtotal;
+        }
 
         // Collect item info for table display
         // Display negative total if returned/refunded (just for clarity in the table)
@@ -91,7 +94,7 @@ if ($rs_ord->num_rows > 0) {
         ];
 
         // Update sums
-        $subtotal       += $line_subtotal;
+
         $total          += $line_total;      // always add line total normally
         $total_discount += $line_discount;
         $tot_qnty       += $quantity;
