@@ -108,5 +108,5 @@
     } else { ?>
         <p class="mb-1" style="font-size: 0.9rem;">Total: <span class="fw-bold">LKR 0</span></p>
 <?php } ?>
-<input type="hidden" id="addedValueTxt" name="" value="<?= $total_price ?>">
-  <input type="hidden" id="totPrice" value="<?= $total_price ?>">
+<input type="hidden" id="addedValueTxt" name="" value="<?= $finalTotal ?>">
+  <input type="hidden" id="totPrice" value="<?= $finalTotal ?>">
