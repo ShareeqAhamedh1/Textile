@@ -1,6 +1,6 @@
 <?php
 include './backend/conn.php';
-
+$emptykZNWsg="saf";
 $billId = $_REQUEST['bill_id'];
 $sqlGrm = "SELECT * FROM tbl_order_grm WHERE id='$billId'";
 $rsGrm = $conn->query($sqlGrm);
