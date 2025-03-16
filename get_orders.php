@@ -86,7 +86,7 @@ if ($rs->num_rows > 0) {
             <td>
                 <div class="border p-2 rounded bg-light" style="font-size: 0.9rem;">
                     <p class="mb-1">
-                        <span class="text-muted">Total Items Bill:</span>
+                        <span class="text-muted">New Bill Value:</span>
                         <span class="fw-bold text-primary">LKR <?= number_format($billValue, 2) ?></span>
                     </p>
 
