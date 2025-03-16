@@ -1,6 +1,6 @@
 <?php
 include './backend/conn.php';
-
+$new='asf';
 // Get the search query from the AJAX request
 $search_query = isset($_GET['search']) ? $_GET['search'] : '';
 
