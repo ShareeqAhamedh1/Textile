@@ -123,7 +123,7 @@ if ($rs->num_rows > 0) {
                     <?php if ($totDiscount > 0): ?>
                         <p class="mb-1 text-muted">
                             <small>
-                                <s class="text-secondary">LKR <?= number_format($billValue + $totDiscount, 2) ?></s>
+                                <s class="text-secondary">LKR <?= number_format($billValue, 2) ?></s>
                                 <span class="text-success ms-2">Total Discount: -LKR <?= number_format($totDiscount, 2) ?></span>
                             </small>
                         </p>
