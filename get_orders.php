@@ -84,52 +84,54 @@ if ($rs->num_rows > 0) {
             </td>
 
             <td>
-                <div class="border p-2 rounded bg-light" style="font-size: 0.9rem;">
-                    <p class="mb-1">
-                        <span class="text-muted">New Bill Value:</span>
-                        <span class="fw-bold text-primary">LKR <?= number_format($billValue, 2) ?></span>
-                    </p>
+    <div class="border p-3 rounded bg-light shadow-sm" style="font-size: 1rem;">
+        <p class="mb-2">
+            <span class="text-muted">New Bill Value:</span>
+            <span class="fw-bold text-primary">LKR <?= number_format($billValue, 2) ?></span>
+        </p>
 
-                    <?php if ($returnedValue > 0): ?>
-                        <p class="mb-1">
-                            <span class="fw-bold">Returned Items Value:</span>
-                            <span class="text-danger">LKR <?= number_format($returnedValue, 2) ?></span>
-                        </p>
-                    <?php endif; ?>
+        <?php if ($returnedValue > 0): ?>
+            <p class="mb-2">
+                <span class="fw-bold">Returned Items Value:</span>
+                <span class="text-danger">LKR <?= number_format($returnedValue, 2) ?></span>
+            </p>
+        <?php endif; ?>
 
-                    <hr class="my-1">
+        <hr class="my-2">
 
-                    <?php if ($finalTotal > 0): ?>
-                        <p class="mb-1">
-                            <span class="text-muted">Amount to Pay:</span>
-                            <span class="fw-bold text-success">LKR <?= number_format($finalTotal, 2) ?></span>
-                        </p>
-                    <?php elseif ($balanceReturn > 0): ?>
-                        <p class="mb-1">
-                            <span class="fw-bold">Balance to Return:</span>
-                            <span class="text-danger">LKR <?= number_format($balanceReturn, 2) ?></span>
-                        </p>
-                    <?php else: ?>
-                        <p class="mb-1 fw-bold text-success">No Payment Required</p>
-                    <?php endif; ?>
+        <?php
+            // Calculate remaining balance after cash paid
+            $creditAmount = max($finalTotal - $cashTook, 0);
+        ?>
 
-                    <?php if($cashTook > 0) {?>
-                    <p class="mb-1">
-                        <span class="fw-bold text-secondary">Cash Took:</span>
-                        <span class="text-info">LKR <?= number_format($cashTook, 2) ?></span>
-                    </p>
-                  <?php } ?>
+        <?php if ($creditAmount > 0): ?>
+            <p class="mb-2">
+                <span class="fw-bold">Credit Amount (Pending Payment):</span>
+                <span class="text-danger">LKR <?= number_format($creditAmount, 2) ?></span>
+            </p>
+        <?php else: ?>
+            <p class="mb-2 fw-bold text-success">No Payment Required</p>
+        <?php endif; ?>
 
-                    <?php if ($totDiscount > 0): ?>
-                        <p class="mb-1 text-muted">
-                            <small>
-                                <s class="text-secondary">LKR <?= number_format($billValue, 2) ?></s>
-                                <span class="text-success ms-2">Total Discount: -LKR <?= number_format($totDiscount, 2) ?></span>
-                            </small>
-                        </p>
-                    <?php endif; ?>
-                </div>
-            </td>
+        <?php if ($cashTook > 0): ?>
+            <p class="mb-2">
+                <span class="fw-bold text-secondary">Cash Took:</span>
+                <span class="text-info">LKR <?= number_format($cashTook, 2) ?></span>
+            </p>
+        <?php endif; ?>
+
+        <?php if ($totDiscount > 0): ?>
+            <p class="mb-2 text-muted">
+                <small>
+                    <s class="text-secondary">LKR <?= number_format($billValue + $totDiscount, 2) ?></s>
+                    <span class="text-success ms-2">Total Discount: -LKR <?= number_format($totDiscount, 2) ?></span>
+                </small>
+            </p>
+        <?php endif; ?>
+    </div>
+</td>
+
+
 
             <td>
                 <a class="me-3" href="backend/gotopos.php?grm_id=<?= $ref ?>">
