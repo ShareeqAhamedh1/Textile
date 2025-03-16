@@ -7,10 +7,7 @@
 
            <!-- Sidebar -->
 			<?php include './layouts/sidebar.php';  ?>
-			<?php
-
-				$bills =0;
-			 ?>
+	
 			<!-- /Sidebar -->
 
 			<div class="page-wrapper">

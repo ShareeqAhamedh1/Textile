@@ -49,6 +49,14 @@
     $total_discount += $extra_discount;
 }
 
+$orderStatus = getDataBack($conn,'tbl_order_grm','id',$grm_id,'order_st');
+
+if($orderStatus == 1){
+  $extra_discount = getDataBack($conn,'tbl_order_grm','id',$grm_id,'discount_price');
+  $total_price -= $extra_discount;
+  $total_discount += $extra_discount;
+}
+
 
         // Logic for amount to be paid or refunded
         if ($total_price > $returnAmount) {

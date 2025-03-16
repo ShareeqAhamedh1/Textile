@@ -565,6 +565,7 @@ function calculateTotal(){
 
 // Function to update total with discount applied and update totPrice field
 function discountBill(price){
+
     $('#totalValue').load('ajax/bill_total.php', {disc_price: price}, function(response, status, xhr) {
         $('#totPrice').val(response);
     });
@@ -980,11 +981,11 @@ $(document).ready(function() {
 
 
     </script>
+    <?php if($discount_price != 0) { ?>
     <script>
       window.onload = function() {
-        <?php if($discount_price != 0) { ?>
           discountBill(<?= $discount_price ?>);
-        <?php } ?>
 
       };
     </script>
+  <?php } ?>
