@@ -382,15 +382,16 @@ while($oRow = $res_today_orders_3->fetch_assoc()){
 
     // Check returns for this order
     $returnsForThisOrder = 0;
-    $sql_ret_this = "SELECT * FROM tbl_return_exchange WHERE or_id='$oid'";
+    $sql_ret_this = "SELECT * FROM tbl_return_exchange WHERE grm_ref='$grm_ref'";
     $res_ret_this = $conn->query($sql_ret_this);
-    while($rt = $res_ret_this->fetch_assoc()){
 
-        $returnsForThisOrder += ($price * $qty);
+    if($res_ret_this->num_rows == 0){
+        $netOrder = $rawOrderValue - $item_disc;
+    }
+    else {
+      $netOrder = 0;
     }
 
-    // net after discount + returns
-    $netOrder = $rawOrderValue - ($item_disc) - $returnsForThisOrder;
     if($netOrder < 0){
         $netOrder = 0;
     }
@@ -418,6 +419,7 @@ $rsPayments=$conn->query($sqlPayments);
 if($rsPayments->num_rows >0){
   $rowPay=$rsPayments->fetch_assoc();
   $total_payments_today['credit'] -=$rowPay['payment'];
+  $total_payments_today['cash'] +=$rowPay['payment'];
 }
 
 // -------------------------------------------------------------------------------------
