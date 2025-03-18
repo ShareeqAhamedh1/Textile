@@ -349,6 +349,7 @@ $total_payments_today = [
 $sql_today_orders_3 = "SELECT * FROM tbl_order";
 $res_today_orders_3 = $conn->query($sql_today_orders_3);
 $billDisc_cash=0;
+$totRetVal=0;
 while($oRow = $res_today_orders_3->fetch_assoc()){
     $oid       = $oRow['id'];
     $grm_ref   = $oRow['grm_ref'];
@@ -382,14 +383,15 @@ while($oRow = $res_today_orders_3->fetch_assoc()){
 
     // Check returns for this order
     $returnsForThisOrder = 0;
-    $sql_ret_this = "SELECT * FROM tbl_return_exchange WHERE grm_ref='$grm_ref'";
+    $sql_ret_this = "SELECT * FROM tbl_return_exchange WHERE or_id='$oid'";
     $res_ret_this = $conn->query($sql_ret_this);
 
     if($res_ret_this->num_rows == 0){
         $netOrder = $rawOrderValue - $item_disc;
     }
     else {
-      $netOrder = 0;
+      $totRetVal += $rawOrderValue - $item_disc;
+        $netOrder = 0;
     }
 
     if($netOrder < 0){
@@ -412,7 +414,7 @@ if($rsDisc->num_rows > 0){
   $billDisc_cash=$rowDisc['bill_disc'];
 }
 
-$total_payments_today['cash']   -= $billDisc_cash;
+$total_payments_today['cash']   -= $billDisc_cash+$totRetVal ;
 
 $sqlPayments ="SELECT SUM(cp_amount) AS payment FROM tbl_customer_payments";
 $rsPayments=$conn->query($sqlPayments);
