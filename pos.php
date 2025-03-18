@@ -256,7 +256,7 @@ $new=0;
             <label class="form-label d-block">
               <i class="fas fa-exchange-alt me-1"></i>Change
             </label>
-            <p class="h5 mb-0 fw-bold">LKR <span id="balanceToGive"></span>.00</p>
+            <p class="h5 mb-0 fw-bold">LKR <span id="balanceToGive"></span></p>
           </div>
 
           <input type="hidden" id="modal_totPrice" value="">
@@ -492,6 +492,15 @@ $(document).ready(function() {
             return false;
         }
 
+        let totPrice = parseFloat(document.getElementById('addedValueTxt').value) || 0;
+        let balance = paid_amount - totPrice;
+        if (balance < 0 && payment_method !=3) {
+          if(paid_amount !=""){
+            alert("For the credit bill please select payment method as credit");
+            return false;
+          }
+    }
+
         $.ajax({
             url: "backend/save_bill.php",
             method: "POST",
@@ -526,6 +535,8 @@ $(document).ready(function() {
         let discount_amount = $("#discount_amount").val() || 0;
         let payment_method = $("input[name='payment']:checked").val();
         let paid_amount = $('#paid_amount').val();
+
+
         $.ajax({
             url: "backend/save_bill.php",
             method: "POST",
@@ -576,7 +587,12 @@ function showBalance() {
     let totPrice = parseFloat(document.getElementById('addedValueTxt').value) || 0;
     let paid_amount = parseFloat(document.getElementById('paid_amount').value) || 0;
     let balance = paid_amount - totPrice;
+    if (balance < 0) {
+    document.getElementById('balanceToGive').innerHTML = Math.abs(balance) + " (Credit)";
+} else {
     document.getElementById('balanceToGive').innerHTML = balance;
+}
+
 }
 
 // Function to add an item to the cart using a barcode
@@ -874,6 +890,15 @@ $(document).ready(function() {
           return false;
       }
 
+      let totPrice = parseFloat(document.getElementById('addedValueTxt').value) || 0;
+      let balance = paid_amount - totPrice;
+      if (balance < 0 && payment_method !=3) {
+        if(paid_amount !=""){
+          alert("For the credit bill please select payment method as credit");
+          return false;
+        }
+  }
+
       $.ajax({
           url: "backend/save_bill.php",
           method: "POST",
@@ -912,6 +937,14 @@ $(document).ready(function() {
           alert("For the credit bill customer details required");
           return false;
       }
+      let totPrice = parseFloat(document.getElementById('addedValueTxt').value) || 0;
+      let balance = paid_amount - totPrice;
+      if (balance < 0 && payment_method !=3) {
+        if(paid_amount !=""){
+          alert("For the credit bill please select payment method as credit");
+          return false;
+        }
+  }
 
       $.ajax({
           url: "backend/save_bill.php",
