@@ -101,7 +101,12 @@ if ($rs->num_rows > 0) {
 
         <?php
             // Calculate remaining balance after cash paid
-            $creditAmount = max($finalTotal - $cashTook, 0);
+            if($payType == 3){
+              $creditAmount = max($finalTotal - $cashTook, 0);
+            }
+            else {
+              $creditAmount = 0;
+            }
         ?>
 
         <?php if ($creditAmount > 0): ?>
@@ -109,9 +114,12 @@ if ($rs->num_rows > 0) {
                 <span class="fw-bold">Credit Amount (Pending Payment):</span>
                 <span class="text-danger">LKR <?= number_format($creditAmount, 2) ?></span>
             </p>
-        <?php else: ?>
-            <p class="mb-2 fw-bold text-success">No Payment Required</p>
         <?php endif; ?>
+
+        <?php if ($payType !=3 && $finalTotal > 0): ?>
+              <p class="mb-2 fw-bold text-success">Customer Paid:LKR <?= number_format($finalTotal, 2) ?>  </p>
+        <?php endif; ?>
+
 
         <?php if ($cashTook > 0): ?>
             <p class="mb-2">
