@@ -412,6 +412,14 @@ if($rsDisc->num_rows > 0){
 }
 
 $total_payments_today['cash']   -= $billDisc_cash;
+
+$sqlPayments ="SELECT SUM(cp_amount) AS payment FROM tbl_customer_payments";
+$rsPayments=$conn->query($sqlPayments);
+if($rsPayments->num_rows >0){
+  $rowPay=$rsPayments->fetch_assoc();
+  $total_payments_today['credit'] -=$rowPay['payment'];
+}
+
 // -------------------------------------------------------------------------------------
 // 8) Return Payments (for display)
 // -------------------------------------------------------------------------------------
