@@ -348,7 +348,7 @@ $total_payments_today = [
 
 $sql_today_orders_3 = "SELECT * FROM tbl_order";
 $res_today_orders_3 = $conn->query($sql_today_orders_3);
-
+$billDisc_cash=0;
 while($oRow = $res_today_orders_3->fetch_assoc()){
     $oid       = $oRow['id'];
     $grm_ref   = $oRow['grm_ref'];
@@ -385,13 +385,12 @@ while($oRow = $res_today_orders_3->fetch_assoc()){
     $sql_ret_this = "SELECT * FROM tbl_return_exchange WHERE or_id='$oid'";
     $res_ret_this = $conn->query($sql_ret_this);
     while($rt = $res_ret_this->fetch_assoc()){
-        // If partial returns exist, handle accordingly.
-        // For simplicity, assume all items returned => same qty
+
         $returnsForThisOrder += ($price * $qty);
     }
 
     // net after discount + returns
-    $netOrder = $rawOrderValue - ($item_disc + $billDiscount) - $returnsForThisOrder;
+    $netOrder = $rawOrderValue - ($item_disc) - $returnsForThisOrder;
     if($netOrder < 0){
         $netOrder = 0;
     }
@@ -402,8 +401,17 @@ while($oRow = $res_today_orders_3->fetch_assoc()){
         case 2: $total_payments_today['bank']   += $netOrder; break;
         case 3: $total_payments_today['credit'] += $netOrder; break;
     }
+
 }
 
+$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=0";
+$rsDisc=$conn->query($sqlDisc);
+if($rsDisc->num_rows > 0){
+  $rowDisc=$rsDisc->fetch_assoc();
+  $billDisc_cash=$rowDisc['bill_disc'];
+}
+
+$total_payments_today['cash']   -= $billDisc_cash;
 // -------------------------------------------------------------------------------------
 // 8) Return Payments (for display)
 // -------------------------------------------------------------------------------------
