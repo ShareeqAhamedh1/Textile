@@ -200,7 +200,7 @@ $new=0;
                     </div>
                     <div class="mb-3">
                         <label for="customerPhone" class="form-label">Phone Number</label>
-                        <input type="text" id="customerPhone" class="form-control">
+                        <input type="text" id="customerPhoneNum" class="form-control">
                     </div>
                     <div class="mb-3">
                         <label for="customerEmail" class="form-label">Email</label>
@@ -358,7 +358,7 @@ $(document).ready(function() {
     $("#customerForm").submit(function(event) {
         event.preventDefault();
         let name = $("#customerName").val().trim();
-        let phone = $("#customerPhone").val().trim();
+        let phone = $("#customerPhoneNum").val().trim();
         let email = $("#customerEmail").val().trim();
         let address = $("#customerAddress").val().trim();
         let city = $("#customerCity").val().trim();
@@ -367,6 +367,7 @@ $(document).ready(function() {
             alert("Customer name is required!");
             return;
         }
+
 
         $.ajax({
             url: "backend/add_customer.php",
