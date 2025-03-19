@@ -423,6 +423,22 @@ if($rsDisc->num_rows > 0){
   $total_payments_today['credit']   -= $billDisc_cash+$totRetVal ;
 }
 
+$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=2";
+$rsDisc=$conn->query($sqlDisc);
+if($rsDisc->num_rows > 0){
+  $rowDisc=$rsDisc->fetch_assoc();
+  $billDisc_cash=$rowDisc['bill_disc'];
+  $total_payments_today['bank']   -= $billDisc_cash+$totRetVal ;
+}
+
+$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=1";
+$rsDisc=$conn->query($sqlDisc);
+if($rsDisc->num_rows > 0){
+  $rowDisc=$rsDisc->fetch_assoc();
+  $billDisc_cash=$rowDisc['bill_disc'];
+  $total_payments_today['online']   -= $billDisc_cash+$totRetVal ;
+}
+
 
 
 $sqlPayments ="SELECT SUM(cp_amount) AS payment FROM tbl_customer_payments";
