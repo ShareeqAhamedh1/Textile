@@ -101,8 +101,6 @@ $balance_stock = max($tot_entered_stock - $actual_stock_sold, 0);
                 $row = $rs->fetch_assoc();
                 $ref = intval($row['id']);
 
-                $orderStatus = $row['order_st'];
-                $orSt = ($orderStatus == 0) ? "DRAFT" : "Completed";
                 $customer = htmlspecialchars($row['c_name'] ?? 'N/A');
                 $payType = $row['payment_type'];
                 $cashTook = floatval($row['cash_took']);
@@ -112,9 +110,14 @@ $balance_stock = max($tot_entered_stock - $actual_stock_sold, 0);
                 $returnedValue = 0;
                 $totDiscount = 0;
                 $billDiscTot = floatval($row['discount_price']);
+                $total_sold_qty = 0;
+                $total_return_qty = 0;
 
-                // Fetch order items
-                $sqlS = "SELECT * FROM tbl_order WHERE grm_ref='$ref'";
+                // Fetch order items with correct return deduction
+                $sqlS = "SELECT o.*,
+                                (SELECT COALESCE(SUM(quantity), 0) FROM tbl_return_exchange r WHERE r.or_id = o.id) AS returned_qty
+                         FROM tbl_order o
+                         WHERE o.grm_ref='$ref'";
                 $rsS = $conn->query($sqlS);
 
                 if ($rsS->num_rows > 0) {
@@ -122,6 +125,7 @@ $balance_stock = max($tot_entered_stock - $actual_stock_sold, 0);
                         $id = $rowS['id'];
                         $pid = $rowS['product_id'];
                         $qty = $rowS['quantity'];
+                        $returned_qty = (int) $rowS['returned_qty'];
                         $discountPerItem = floatval($rowS['discount']);
                         $priceP = floatval(getDataBack($conn, 'tbl_product', 'id', $pid, 'price'));
 
@@ -129,13 +133,10 @@ $balance_stock = max($tot_entered_stock - $actual_stock_sold, 0);
                         $lineDiscount = $discountPerItem * $qty;
                         $lineTotal = $linePrice - $lineDiscount;
 
-                        // Check if item is returned
-                        $sqlReturn = "SELECT COUNT(*) AS ret_count FROM tbl_return_exchange WHERE or_id = '$id'";
-                        $rsReturn = $conn->query($sqlReturn);
-                        $rowReturn = $rsReturn->fetch_assoc();
-                        $returnedCount = (int) $rowReturn['ret_count'];
+                        $total_sold_qty += $qty;
+                        $total_return_qty += $returned_qty;
 
-                        if ($returnedCount > 0) {
+                        if ($returned_qty > 0) {
                             $returnedValue += $lineTotal;
                         } else {
                             $total += $lineTotal;
@@ -152,12 +153,12 @@ $balance_stock = max($tot_entered_stock - $actual_stock_sold, 0);
                 $creditAmount = ($payType == 3) ? max($finalTotal - $cashTook, 0) : 0;
         ?>
                 <tr>
-                    <td><?= htmlspecialchars($row['order_ref']) ?> - <?= $orSt ?></td>
+                    <td><?= htmlspecialchars($row['order_ref']) ?></td>
                     <td><?= $customer ?></td>
                     <td><?= htmlspecialchars($row['order_date']) ?></td>
                     <td><?= getPayment($payType) ?></td>
-                    <td>LKR <?= number_format($billValue, 2) ?></td>
-                    <td>LKR <?= number_format($finalTotal, 2) ?></td>
+                    <td><?= number_format($billValue, 2) ?></td>
+                    <td><?= number_format($finalTotal, 2) ?></td>
                     <td>
                         <a href="print_bill.php?bill_id=<?= $ref ?>" target="_blank">
                             <span style="color:#f74e05;font-weight:bold;">Print Bill</span>
@@ -168,7 +169,7 @@ $balance_stock = max($tot_entered_stock - $actual_stock_sold, 0);
                 <tr>
                     <td colspan="4">
                         <strong>Total Sold <?= htmlspecialchars($pname) ?> on this bill:</strong>
-                        <span style="color:#6e8c0a;font-size:18px;">(<?= number_format($tot_stock_sold - $total_returned) ?>)</span>
+                        <span style="color:#6e8c0a;font-size:18px;">(<?= number_format($total_sold_qty - $total_return_qty) ?>)</span>
                     </td>
                 </tr>
         <?php
