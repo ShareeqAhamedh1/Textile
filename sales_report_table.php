@@ -156,8 +156,8 @@ $balance_stock = max($tot_entered_stock - $actual_stock_sold, 0);
                     <td><?= $customer ?></td>
                     <td><?= htmlspecialchars($row['order_date']) ?></td>
                     <td><?= getPayment($payType) ?></td>
-                    <td><?= number_format($billValue, 2) ?></td>
-                    <td><?= number_format($finalTotal, 2) ?></td>
+                    <td>LKR <?= number_format($billValue, 2) ?></td>
+                    <td>LKR <?= number_format($finalTotal, 2) ?></td>
                     <td>
                         <a href="print_bill.php?bill_id=<?= $ref ?>" target="_blank">
                             <span style="color:#f74e05;font-weight:bold;">Print Bill</span>
