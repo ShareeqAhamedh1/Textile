@@ -20,17 +20,31 @@ if ($row_stock = $rs_exp->fetch_assoc()) {
 
 // Fetch total sold stock
 $tot_stock_sold = 0;
-$sql_pos = "SELECT COALESCE(SUM(quantity), 0) AS qty FROM tbl_order WHERE product_id='$p_id'";
-$rs_pos = $conn->query($sql_pos);
-if ($row_pos = $rs_pos->fetch_assoc()) {
-    $tot_stock_sold = (int) $row_pos['qty'];
+$sql_sold = "SELECT COALESCE(SUM(quantity), 0) AS qty FROM tbl_order WHERE product_id='$p_id'";
+$rs_sold = $conn->query($sql_sold);
+if ($row_sold = $rs_sold->fetch_assoc()) {
+    $tot_stock_sold = (int) $row_sold['qty'];
 }
+
+// Fetch total returned items
+$total_returned = 0;
+$sql_return = "SELECT COALESCE(SUM(o.quantity), 0) AS returned_qty
+               FROM tbl_return_exchange r
+               INNER JOIN tbl_order o ON r.or_id = o.id
+               WHERE o.product_id='$p_id'";
+$rs_return = $conn->query($sql_return);
+if ($row_return = $rs_return->fetch_assoc()) {
+    $total_returned = (int) $row_return['returned_qty'];
+}
+
+// Calculate accurate sold stock after returns
+$actual_stock_sold = max($tot_stock_sold - $total_returned, 0);
 
 // Get product name
 $pname = getDataBack($conn, 'tbl_product', 'id', $p_id, 'name');
 
 // Compute remaining stock
-$balance_stock = max($tot_entered_stock - $tot_stock_sold, 0);
+$balance_stock = max($tot_entered_stock - $actual_stock_sold, 0);
 
 ?>
 
@@ -39,6 +53,8 @@ $balance_stock = max($tot_entered_stock - $tot_stock_sold, 0);
         <tr>
             <th>Product Name</th>
             <th>Total Sold (POS)</th>
+            <th>Total Returned</th>
+            <th>Final Sold Quantity</th>
             <th>Total Stock Entered</th>
             <th>Balance Stock</th>
         </tr>
@@ -47,6 +63,8 @@ $balance_stock = max($tot_entered_stock - $tot_stock_sold, 0);
         <tr>
             <td><?= htmlspecialchars($pname) ?></td>
             <td><?= number_format($tot_stock_sold) ?></td>
+            <td><?= number_format($total_returned) ?></td>
+            <td><?= number_format($actual_stock_sold) ?></td>
             <td><?= number_format($tot_entered_stock) ?></td>
             <td><?= number_format($balance_stock) ?></td>
         </tr>
@@ -65,7 +83,7 @@ $balance_stock = max($tot_entered_stock - $tot_stock_sold, 0);
             <th>Date</th>
             <th>Payment Type</th>
             <th>Total Bill</th>
-            <th>Total</th>
+            <th>Net Payable</th>
             <th>View Details</th>
         </tr>
     </thead>
@@ -73,7 +91,7 @@ $balance_stock = max($tot_entered_stock - $tot_stock_sold, 0);
         <?php
         foreach ($order_ref_pos as $grm_id) {
             // Fetch order details
-            $sql = "SELECT g.id, g.order_ref, g.customer_id, g.order_date, g.payment_type, g.discount_price, c.c_name
+            $sql = "SELECT g.*, c.c_name, c.c_phone, c.c_id
                     FROM tbl_order_grm g
                     LEFT JOIN tbl_customer c ON g.customer_id = c.c_id
                     WHERE g.id = '$grm_id'
@@ -81,92 +99,81 @@ $balance_stock = max($tot_entered_stock - $tot_stock_sold, 0);
             $rs = $conn->query($sql);
             if ($rs->num_rows > 0) {
                 $row = $rs->fetch_assoc();
-                $ref = $row['id'];
+                $ref = intval($row['id']);
+
+                $orderStatus = $row['order_st'];
+                $orSt = ($orderStatus == 0) ? "DRAFT" : "Completed";
+                $customer = htmlspecialchars($row['c_name'] ?? 'N/A');
+                $payType = $row['payment_type'];
+                $cashTook = floatval($row['cash_took']);
 
                 // Initialize totals
-                $total_price = 0;
-                $total_discount = 0;
-                $returnAmount = 0;
+                $total = 0;
+                $returnedValue = 0;
+                $totDiscount = 0;
+                $billDiscTot = floatval($row['discount_price']);
 
-                // Fetch all items for this order reference
-                $sql_items = "SELECT * FROM tbl_order WHERE grm_ref='$ref'";
-                $rs_items = $conn->query($sql_items);
+                // Fetch order items
+                $sqlS = "SELECT * FROM tbl_order WHERE grm_ref='$ref'";
+                $rsS = $conn->query($sqlS);
 
-                if ($rs_items->num_rows > 0) {
-                    while ($row_item = $rs_items->fetch_assoc()) {
-                        $id = $row_item['id'];
-                        $p_id = $row_item['product_id'];
-                        $qty = $row_item['quantity'];
-                        $p_price = getDataBack($conn, 'tbl_product', 'id', $p_id, 'price') * $qty;
-                        $discount = $row_item['discount'] ?? 0;
-                        $discount = $discount * $qty;
-                        $p_price -= $discount;
-                        $total_discount += $discount;
+                if ($rsS->num_rows > 0) {
+                    while ($rowS = $rsS->fetch_assoc()) {
+                        $id = $rowS['id'];
+                        $pid = $rowS['product_id'];
+                        $qty = $rowS['quantity'];
+                        $discountPerItem = floatval($rowS['discount']);
+                        $priceP = floatval(getDataBack($conn, 'tbl_product', 'id', $pid, 'price'));
 
-                        // Check if the item is returned
-                        $sqlReturn = "SELECT * FROM tbl_return_exchange WHERE or_id='$id'";
+                        $linePrice = $priceP * $qty;
+                        $lineDiscount = $discountPerItem * $qty;
+                        $lineTotal = $linePrice - $lineDiscount;
+
+                        // Check if item is returned
+                        $sqlReturn = "SELECT COUNT(*) AS ret_count FROM tbl_return_exchange WHERE or_id = '$id'";
                         $rsReturn = $conn->query($sqlReturn);
-                        if ($rsReturn->num_rows > 0) {
-                            while ($rowExchange = $rsReturn->fetch_assoc()) {
-                                $returnAmount += $p_price; // Mark as returned
-                            }
+                        $rowReturn = $rsReturn->fetch_assoc();
+                        $returnedCount = (int) $rowReturn['ret_count'];
+
+                        if ($returnedCount > 0) {
+                            $returnedValue += $lineTotal;
                         } else {
-                            $total_price += $p_price; // Add to total only if not returned
+                            $total += $lineTotal;
                         }
+
+                        $totDiscount += $lineDiscount;
                     }
                 }
 
-                // Apply additional discount if provided
-                if ($row['discount_price'] > 0) {
-                    $total_price -= $row['discount_price'];
-                    $total_discount += $row['discount_price'];
-                }
-
-                // Logic for amount to be paid or refunded
-                if ($total_price > $returnAmount) {
-                    $finalTotal = $total_price - $returnAmount;  // Customer needs to pay
-                    $balanceReturn = 0;
-                } elseif ($returnAmount > $total_price) {
-                    $finalTotal = 0;
-                    $balanceReturn = $returnAmount - $total_price; // Amount to return to customer
-                } else {
-                    $finalTotal = 0;
-                    $balanceReturn = 0; // No payment needed
-                }
+                // Final bill calculations
+                $billValue = max($total - $billDiscTot, 0);
+                $finalTotal = max($billValue - $returnedValue, 0);
+                $totDiscount += $billDiscTot;
+                $creditAmount = ($payType == 3) ? max($finalTotal - $cashTook, 0) : 0;
         ?>
                 <tr>
-                    <td><?= htmlspecialchars($row['order_ref']) ?></td>
-                    <td><?= htmlspecialchars($row['c_name'] ?: 'N/A') ?></td>
+                    <td><?= htmlspecialchars($row['order_ref']) ?> - <?= $orSt ?></td>
+                    <td><?= $customer ?></td>
                     <td><?= htmlspecialchars($row['order_date']) ?></td>
-                    <td><?= getPayment($row['payment_type']) ?></td>
-                    <td><?= number_format($finalTotal, 2) ?></td>
+                    <td><?= getPayment($payType) ?></td>
+                    <td><?= number_format($billValue, 2) ?></td>
                     <td><?= number_format($finalTotal, 2) ?></td>
                     <td>
-                        <a href="print_bill.php?bill_id=<?= $row['id'] ?>" target="_blank">
+                        <a href="print_bill.php?bill_id=<?= $ref ?>" target="_blank">
                             <span style="color:#f74e05;font-weight:bold;">Print Bill</span>
                         </a>
                     </td>
                 </tr>
 
-                <?php
-                // Get stock sold for this product in this order
-                $sql_pos = "SELECT COALESCE(SUM(quantity), 0) AS qty FROM tbl_order WHERE product_id='$p_id' AND grm_ref='$grm_id'";
-                $rs_pos = $conn->query($sql_pos);
-                if ($rs_pos->num_rows > 0) {
-                    $row_pos = $rs_pos->fetch_assoc();
-                    $stock_only_item = $row_pos['qty'];
-                ?>
-                    <tr>
-                        <td style="font-weight:bold;" colspan="4">
-                            Total Sold <?= htmlspecialchars($pname) ?> on this bill:
-                            <span style="color:#6e8c0a;font-size:18px;">(<?= number_format($stock_only_item) ?>)</span>
-                        </td>
-                    </tr>
-                <?php } ?>
+                <tr>
+                    <td colspan="4">
+                        <strong>Total Sold <?= htmlspecialchars($pname) ?> on this bill:</strong>
+                        <span style="color:#6e8c0a;font-size:18px;">(<?= number_format($tot_stock_sold - $total_returned) ?>)</span>
+                    </td>
+                </tr>
         <?php
-            } // Closing bracket for first `if ($rs->num_rows > 0)`
-        } // Closing bracket for `foreach`
-        ?>
+            }
+        } ?>
     </tbody>
 </table>
 <br>
