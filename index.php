@@ -407,7 +407,7 @@ while($oRow = $res_today_orders_3->fetch_assoc()){
 
 }
 
-$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=0";
+$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=0 AND DATE(order_date) = '$today_date'";
 $rsDisc=$conn->query($sqlDisc);
 if($rsDisc->num_rows > 0){
   $rowDisc=$rsDisc->fetch_assoc();
@@ -415,7 +415,7 @@ if($rsDisc->num_rows > 0){
   $total_payments_today['cash']   -= $billDisc_cash+$totRetVal ;
 }
 
-$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=3";
+$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=3 AND DATE(order_date) = '$today_date'";
 $rsDisc=$conn->query($sqlDisc);
 if($rsDisc->num_rows > 0){
   $rowDisc=$rsDisc->fetch_assoc();
@@ -423,7 +423,7 @@ if($rsDisc->num_rows > 0){
   $total_payments_today['credit']   -= $billDisc_cash+$totRetVal ;
 }
 
-$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=2";
+$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=2 AND DATE(order_date) = '$today_date'";
 $rsDisc=$conn->query($sqlDisc);
 if($rsDisc->num_rows > 0){
   $rowDisc=$rsDisc->fetch_assoc();
@@ -431,7 +431,7 @@ if($rsDisc->num_rows > 0){
   $total_payments_today['bank']   -= $billDisc_cash+$totRetVal ;
 }
 
-$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=1";
+$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=1 AND DATE(order_date) = '$today_date'";
 $rsDisc=$conn->query($sqlDisc);
 if($rsDisc->num_rows > 0){
   $rowDisc=$rsDisc->fetch_assoc();
@@ -441,7 +441,7 @@ if($rsDisc->num_rows > 0){
 
 
 
-$sqlPayments ="SELECT SUM(cp_amount) AS payment FROM tbl_customer_payments";
+$sqlPayments ="SELECT SUM(cp_amount) AS payment FROM tbl_customer_payments WHERE cp_date = '$today_date'";
 $rsPayments=$conn->query($sqlPayments);
 if($rsPayments->num_rows >0){
   $rowPay=$rsPayments->fetch_assoc();
@@ -533,7 +533,7 @@ $till_balance = $total_payments_today['cash']
             <?php if($u_id == 1): ?>
             <!-- Financial Overview Section -->
             <div class="col-12">
-                <h4 class="section-title">Financial Overview</h4>
+                <h4 class="section-title">Financial Overview </h4>
                 <div class="row g-4">
                     <div class="col-xl-3 col-lg-4 col-md-6">
                         <div class="card dashboard-card shadow-sm">
