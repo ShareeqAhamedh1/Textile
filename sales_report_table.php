@@ -2,6 +2,16 @@
 include 'backend/conn.php';
 $p_id = $_REQUEST['p_id'];
 
+$from_date = $_REQUEST['f_date'] ?? 0;
+$to_date = $_REQUEST['t_date'] ?? 0;
+
+$sqlVendorReturns ="SELECT SUM(ret_qty) AS tot_qty_ret FROM tbl_item_return WHERE p_id='$p_id'";
+$rsVendorsReturns =$conn->query($sqlVendorReturns);
+$vendorRetQty =0;
+if($rsVendorsReturns->num_rows > 0){
+  $rowVenRet =$rsVendorsReturns->fetch_assoc();
+  $vendorRetQty =$rowVenRet['tot_qty_ret'];
+}
 // Fetch all related GRM references for this product
 $order_ref_pos = [];
 $sql_pos = "SELECT DISTINCT grm_ref FROM tbl_order WHERE product_id='$p_id'";
@@ -44,7 +54,7 @@ $actual_stock_sold = max($tot_stock_sold - $total_returned, 0);
 $pname = getDataBack($conn, 'tbl_product', 'id', $p_id, 'name');
 
 // Compute remaining stock
-$balance_stock = max($tot_entered_stock - $actual_stock_sold, 0);
+$balance_stock = currentStockCount($conn,$p_id);
 
 ?>
 
@@ -54,9 +64,13 @@ $balance_stock = max($tot_entered_stock - $actual_stock_sold, 0);
             <th>Product Name</th>
             <th>Total Sold (POS)</th>
             <th>Total Returned</th>
+            <th>Total Vendor Returns</th>
             <th>Final Sold Quantity</th>
             <th>Total Stock Entered</th>
             <th>Balance Stock</th>
+            <th>Sales Value</th>
+            <th>Cost Value</th>
+            <th>Profit/Loss</th>
         </tr>
     </thead>
     <tbody>
@@ -64,9 +78,13 @@ $balance_stock = max($tot_entered_stock - $actual_stock_sold, 0);
             <td><?= htmlspecialchars($pname) ?></td>
             <td><?= number_format($tot_stock_sold) ?></td>
             <td><?= number_format($total_returned) ?></td>
+            <td> <?= $vendorRetQty ?> </td>
             <td><?= number_format($actual_stock_sold) ?></td>
             <td><?= number_format($tot_entered_stock) ?></td>
             <td><?= number_format($balance_stock) ?></td>
+            <td> <?= getProductPrice($conn,$p_id) ?> </td>
+            <td> <?= getProductCost($conn,$p_id) ?> </td>
+            <td>LKR <?= number_format(getProductPrice($conn,$p_id) - getProductCost($conn,$p_id),2) ?> </td>
         </tr>
     </tbody>
 </table>

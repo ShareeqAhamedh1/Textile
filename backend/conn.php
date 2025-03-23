@@ -78,6 +78,125 @@ function getReturnCost($conn, $p_id){
     }
     return $returnCost;
 }
+
+function getProductPrice($conn, $p_id) {
+    $sql = "
+        SELECT
+            SUM(
+                (o.quantity * p.price)
+                - (IFNULL(o.discount, 0) * o.quantity)
+                - (
+                    ((o.quantity * p.price) / total_order.total_amount)
+                    * IFNULL(grm.discount_price, 0)
+                )
+            ) AS total
+        FROM tbl_order o
+        JOIN tbl_product p ON o.product_id = p.id
+        JOIN tbl_order_grm grm ON o.grm_ref = grm.id
+        JOIN (
+            SELECT o.grm_ref, SUM(o.quantity * p.price) AS total_amount
+            FROM tbl_order o
+            JOIN tbl_product p ON o.product_id = p.id
+            GROUP BY o.grm_ref
+        ) AS total_order ON total_order.grm_ref = o.grm_ref
+        WHERE o.product_id = ?
+    ";
+
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param("i", $p_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $stmt->close();
+
+        return $row['total'] ?? 0;
+    }
+}
+
+function getProductPriceWithDate($conn, $p_id, $fromDate, $toDate) {
+    $sql = "
+        SELECT
+            SUM(
+                (o.quantity * p.price)
+                - (IFNULL(o.discount, 0) * o.quantity)
+                - (
+                    ((o.quantity * p.price) / total_order.total_amount)
+                    * IFNULL(grm.discount_price, 0)
+                )
+            ) AS total
+        FROM tbl_order o
+        JOIN tbl_product p ON o.product_id = p.id
+        JOIN tbl_order_grm grm ON o.grm_ref = grm.id
+        JOIN (
+            SELECT o.grm_ref, SUM(o.quantity * p.price) AS total_amount
+            FROM tbl_order o
+            JOIN tbl_product p ON o.product_id = p.id
+            GROUP BY o.grm_ref
+        ) AS total_order ON total_order.grm_ref = o.grm_ref
+        WHERE o.product_id = ?
+          AND DATE(grm.order_date) BETWEEN ? AND ?
+    ";
+
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param("iss", $p_id, $fromDate, $toDate);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $stmt->close();
+
+        return $row['total'] ?? 0;
+    }
+}
+
+
+
+
+
+function getProductCostWithDate($conn, $p_id, $fromDate, $toDate) {
+    $sql = "
+        SELECT SUM(o.quantity * p.cost_price) AS total_cost
+        FROM tbl_order o
+        JOIN tbl_product p ON o.product_id = p.id
+        WHERE o.product_id = ?
+          AND DATE(o.bill_date) BETWEEN ? AND ?
+    ";
+
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param("iss", $p_id, $fromDate, $toDate);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $stmt->close();
+
+        return $row['total_cost'] ?? 0;
+    } else {
+        die("Prepare failed: " . $conn->error);
+    }
+}
+
+function getProductCost($conn, $p_id) {
+  $sql = "
+      SELECT SUM(o.quantity * p.cost_price) AS total_cost
+      FROM tbl_order o
+      JOIN tbl_product p ON o.product_id = p.id
+      WHERE o.product_id = ?
+  ";
+
+  if ($stmt = $conn->prepare($sql)) {
+      $stmt->bind_param("i", $p_id);
+      $stmt->execute();
+      $result = $stmt->get_result();
+      $row = $result->fetch_assoc();
+      $stmt->close();
+
+      return $row['total_cost'] ?? 0;
+  } else {
+      die("Prepare failed: " . $conn->error);
+  }
+}
+
+
+
 function currentStockCount($conn, $p_id) {
     // 1) Get total ordered quantity for the product
     //    EXCLUDING orders that have a matching row in tbl_return_exchange.

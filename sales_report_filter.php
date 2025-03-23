@@ -13,7 +13,7 @@
 
 					<!-- Button trigger modal -->
 					<div class="row">
-						<div class="col-lg-8">
+						<div class="col-lg-4">
 							<div class="form-group">
 							<label for="">Select Product</label>
 								<select class=" js-states form-control"  name="" id="product_id">
@@ -46,8 +46,20 @@
 								</select>
 						</div>
 						</div>
+						<div class="col-lg-4">
+							<div class="form-group">
+								<label for="">From</label>
+								<input type="date" class="form-control" id="from_date" name="" value="">
+							</div>
+						</div>
+						<div class="col-lg-4">
+							<div class="form-group">
+								<label for="">To</label>
+								<input type="date" class="form-control" id="to_date" name="" value="">
+							</div>
+						</div>
 						<div class="col-12">
-							<button class="btn btn-success" name="button" onclick="searchSlot()">Search Item</button>
+							<button class="btn btn-success" name="button" onclick="searchSlot()">Search Item</button> <br> <br>
 
 
 						</div>
@@ -83,9 +95,13 @@
 
 				function searchSlot(){
 				 var prodd_id = document.getElementById('product_id').value;
+				 var from_date = document.getElementById('from_date').value;
+				 var to_date = document.getElementById('to_date').value;
 
 				 $('#filter_product').load('sales_report_table.php',{
-					  p_id:prodd_id
+					  p_id:prodd_id,
+						f_date:from_date,
+						t_date:to_date
 					}
 				);
 				}
