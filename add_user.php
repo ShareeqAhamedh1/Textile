@@ -15,17 +15,17 @@
 					<div class="card">
 						<div class="card-body">
 							<div class="row">
-							<div class="col-6">
+							<div class="col-4">
 								<form class="" action="./backend/add_user.php" method="post">
 
 
-								<div class="col-lg-3 col-sm-6 col-12">
+								<div class="col-12">
 									<div class="form-group">
 										<label>User Name</label>
 										<input name="name" type="text" >
 									</div>
 								</div>
-								<div class="col-lg-3 col-sm-6 col-12">
+								<div class="col-12">
 									<div class="form-group">
 										<label>Password</label>
 										<div class="pass-group">
@@ -35,14 +35,13 @@
 									</div>
 								</div>
 
-								
+
 								<div class="col-lg-12">
-									<button type="submit" class="btn btn-submit me-2">Submit</button>
-									<a href="userlist.php"  class="btn btn-cancel">Cancel</a>
+									<button type="submit" class="btn btn-submit me-2"> + Add User</button>
 								</div>
 								</form>
 							</div>
-							<div class="col-6">
+							<div class="col-8">
 								<table class="table  datanew">
 									<thead>
 										<tr>
@@ -58,12 +57,11 @@
 
 											if($rsUsers->num_rows > 0){
 												while($rowUsers = $rsUsers->fetch_assoc()){
-													$s_id = $rowUsers['sale_point'];
 										 ?>
 										<tr>
 											<td> <?= $rowUsers['username'] ?> </td>
 											<td> <?= $rowUsers['password'] ?> </td>
-											
+
 											<td> <a href="backend/del_user.php?id=<?= $rowUsers['user_id'] ?>"
                                              onclick="return confirm('Are you sure you want to delete?')" class="btn btn-danger btn-sm">Delete</a> ||
                                               <a class="btn btn-warning btn-sm" onclick="editUser(<?= $rowUsers['user_id'] ?>)">Edit</a> </td>
@@ -90,7 +88,7 @@
 				        </button>
 				      </div>
 				      <div class="modal-body" id="showUserDetails">
-				        
+
 				      </div>
 				    </div>
 				  </div>

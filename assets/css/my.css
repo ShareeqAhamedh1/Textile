@@ -9,3 +9,23 @@
   margin-right: 20px;
   padding:20px 20px 20px 20px;
 }
+
+/* Match the height and border radius of Bootstrap's large form-select */
+.select2-container--bootstrap-5 .select2-selection--single {
+  padding: .5rem .75rem;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  border: 1px solid #ced4da;
+  border-radius: .5rem;
+}
+
+/* Ensure the dropdown matches the width and font */
+.select2-dropdown {
+  font-size:18px;
+}
+
+.select2-container--bootstrap-5 .select2-results__option--highlighted {
+  transition: 0.2s;
+  background-color: #ebebeb;
+  color: #363131;
+}

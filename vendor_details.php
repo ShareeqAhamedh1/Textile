@@ -33,7 +33,7 @@ $stmt->close();
                 <p><strong>Address:</strong> <?= htmlspecialchars($address) ?></p>
             </div>
 
-         
+
 
             <!-- Vendor Payments -->
             <div class="card p-4 shadow-lg mt-4">
@@ -106,14 +106,14 @@ $stmt->close();
         </thead>
         <tbody>
             <?php
-            $sqlProducts = "SELECT 
-            pu.purchase_id, 
-            p.barcode, 
-            pi.quantity, 
-            pi.unit_price, 
-            c.name AS category_name, 
-            p.name AS product_name, 
-            pu.purchase_date 
+            $sqlProducts = "SELECT
+            pu.purchase_id,
+            p.barcode,
+            pi.quantity,
+            pi.unit_price,
+            c.name AS category_name,
+            p.name AS product_name,
+            pu.purchase_date
         FROM tbl_purchase_items pi
         INNER JOIN tbl_purchases pu ON pi.purchase_id = pu.purchase_id
         INNER JOIN tbl_product p ON pi.product_id = p.id
@@ -145,7 +145,7 @@ while ($stmt->fetch()) {
                 <a onclick="del_purchase(<?= $vendor_id ?>)" class="me-3 confirm-text" href="javascript:void(0);">
                     <img src="assets/img/icons/delete.svg" alt="Delete">
                 </a>
-            <?php } 
+            <?php }
           ?>
                     </td>
                 </tr>
@@ -161,11 +161,56 @@ while ($stmt->fetch()) {
 </div>
 
             <div class="card p-4 shadow-lg mt-4">
+              <h3 class="text-dark">Returned Products</h3>
+              <table id="returnTable" class="table table-bordered table-striped">
+<thead>
+<tr>
+  <th>#</th>
+  <th>Vendor</th>
+  <th>Product</th>
+  <th>Return Qty</th>
+  <th>Product Cost</th>
+  <th>Total Value</th>
+  <th>Note</th>
+
+</tr>
+</thead>
+<tbody>
+<?php
+$total_return_cost=0;
+$i = 1;
+$query = $conn->query("SELECT r.*, v.vendor_name, p.name AS product_name, p.barcode,p.cost_price
+                       FROM tbl_item_return r
+                       LEFT JOIN tbl_vendors v ON r.vendor_id = v.vendor_id
+                       LEFT JOIN tbl_product p ON r.p_id = p.id
+                       WHERE v.vendor_id = '$vendor_id'
+                       ORDER BY r.p_id DESC");
+while ($row = $query->fetch_assoc()):
+?>
+<tr>
+  <td><?= $i++ ?></td>
+  <td><?= htmlspecialchars($row['vendor_name']) ?></td>
+  <td><?= htmlspecialchars($row['product_name']) . ' (' . $row['barcode'] . ')' ?></td>
+  <td><?= htmlspecialchars($row['ret_qty']) ?></td>
+  <td><?= "LKR ".number_format($row['cost_price'],2) ?></td>
+  <td><?= "LKR ".number_format($row['cost_price'] * $row['ret_qty'],2) ?></td>
+  <td><?= htmlspecialchars($row['extra_note']) ?></td>
+  <td>
+</td>
+</tr>
+<?php $total_return_cost += $row['cost_price'] * $row['ret_qty']; ?>
+<?php endwhile; ?>
+</tbody>
+</table>
+            </div>
+
+            <div class="card p-4 shadow-lg mt-4">
                 <h3 class="text-dark">Financial Summary</h3>
                 <table class="table table-striped table-bordered">
                     <thead>
                         <tr>
                             <th>Total Purchases</th>
+                            <th>Total Returns</th>
                             <th>Total Payments Made</th>
                             <th>Total Discounts</th>
                             <th>Net Amount Owed</th>
@@ -187,13 +232,25 @@ while ($stmt->fetch()) {
                         $total_payments = fetchSum($conn, "SELECT SUM(amount) FROM tbl_expenses WHERE vendor_id = ? AND category = 'vendor'", $vendor_id);
                         $total_discounts = fetchSum($conn, "SELECT SUM(discount_amount) FROM tbl_vendor_discounts WHERE vendor_id = ?", $vendor_id);
 
-                        $net_amount_owed = $total_purchases - $total_payments - $total_discounts;
+                        $net_amount_owed = $total_purchases - $total_payments - $total_discounts - $total_return_cost;
                         ?>
                         <tr>
-                            <td><?= number_format($total_purchases, 0) ?></td>
+                            <td>LKR <?= number_format($total_purchases, 2) ?></td>
+                            <td>LKR <?= number_format($total_return_cost, 2) ?></td>
                             <td><?= number_format($total_payments, 0) ?></td>
                             <td><?= number_format($total_discounts, 0) ?></td>
-                            <td><?= number_format($net_amount_owed,0) ?></td>
+                            <td>
+  <?php
+    if ($net_amount_owed < 0) {
+      echo '<span class="text-success">Vendor Owes You: LKR. ' . number_format(abs($net_amount_owed), 0) . '</span>';
+    } elseif ($net_amount_owed > 0) {
+      echo '<span class="text-danger">You Owe Vendor: LKR. ' . number_format($net_amount_owed, 0) . '</span>';
+    } else {
+      echo '<span class="text-muted">Settled</span>';
+    }
+  ?>
+</td>
+
                         </tr>
                     </tbody>
                 </table>
