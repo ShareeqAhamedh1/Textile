@@ -16,10 +16,10 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
 		<meta name="robots" content="noindex, nofollow">
-		<title>POS ADMIN</title>
+		<title>iStyle POS </title>
 
 		<!-- Favicon -->
-		<link rel="shortcut icon" type="image/x-icon" href="../../assets/img/favicon.png">
+		<link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.png">
 
 		<!-- Bootstrap CSS -->
 		<link rel="stylesheet" href="assets/css/bootstrap.min.css">
@@ -60,16 +60,7 @@
    <div class="header-left active">
 
     <a href="index.php" class="logo logo-normal">
-			<?php
- 		 if($u_id=='4'){ ?>
-      <img src="../assets/img/logo-22.png"  alt="">
-		<?php }elseif($u_id=='2'){ ?>
-			<h4>Cardamom</h4>
-		<?php }elseif($u_id=='3'){ ?>
-				<h4>Main stores</h4>
-			<?php }else{ ?>
-				<img src="../assets/img/logo-22.png"  alt="">
-			<?php } ?>
+			<img src="logo/b_k_logo.png"  alt="">
     </a>
 
     <a href="index.php" class="logo logo-white">
@@ -151,7 +142,7 @@
 
     <li class="nav-item dropdown has-arrow main-drop">
       <a href="javascript:void(0);" class="dropdown-toggle nav-link userset" data-bs-toggle="dropdown">
-        <span class="user-img"><img src="assets/img/profiles/avator1.jpg" alt="">
+        <span class="user-img"><img src="assets/img/logo-small.png" alt="">
         <span class="status online"></span></span>
       </a>
       <div class="dropdown-menu menu-drop-user">
@@ -172,7 +163,7 @@
           <!-- <a class="dropdown-item" href="profile.html"> <i class="me-2"  data-feather="user"></i> My Profile</a>
           <a class="dropdown-item" href="generalsettings.html"><i class="me-2" data-feather="settings"></i>Settings</a> -->
           <hr class="m-0">
-          <a class="dropdown-item logout pb-0" href="backend/logout.php"><img src="../assets/img/icons/log-out.svg" class="me-2" alt="img">Logout</a>
+          <a class="dropdown-item logout pb-0" href="backend/logout.php"><img src="assets/img/icons/log-out.svg" class="me-2" alt="img">Logout</a>
         </div>
       </div>
     </li>
