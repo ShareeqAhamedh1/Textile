@@ -186,6 +186,8 @@ $query = $conn->query("SELECT r.*, v.vendor_name, p.name AS product_name, p.barc
                        WHERE v.vendor_id = '$vendor_id'
                        ORDER BY r.p_id DESC");
 while ($row = $query->fetch_assoc()):
+  $note = htmlspecialchars($row['extra_note']);
+$shortNote = strlen($note) > 15 ? substr($note, 0, 15) . '...' : $note;
 ?>
 <tr>
   <td><?= $i++ ?></td>
@@ -194,7 +196,13 @@ while ($row = $query->fetch_assoc()):
   <td><?= htmlspecialchars($row['ret_qty']) ?></td>
   <td><?= "LKR ".number_format($row['cost_price'],2) ?></td>
   <td><?= "LKR ".number_format($row['cost_price'] * $row['ret_qty'],2) ?></td>
-  <td><?= htmlspecialchars($row['extra_note']) ?></td>
+  <td>
+  <span style="cursor:pointer; font-weight:bold; color: #0d6efd;"
+        onclick="showNote('<?= htmlspecialchars($note, ENT_QUOTES) ?>')">
+    <?= $shortNote ?>
+  </span>
+</td>
+
   <td>
 </td>
 </tr>
@@ -328,4 +336,17 @@ while ($row = $query->fetch_assoc()):
 
 			});
 		}
+</script>
+<script>
+function showNote(note) {
+  Swal.fire({
+    title: 'Full Note',
+    text: note,
+    icon: 'info',
+    confirmButtonText: 'Close',
+    customClass: {
+      popup: 'swal2-rounded'
+    }
+  });
+}
 </script>

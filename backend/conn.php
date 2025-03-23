@@ -119,10 +119,20 @@ function currentStockCount($conn, $p_id) {
         $returnQty = $rowReturn['returnQty'] ? $rowReturn['returnQty'] : 0;
     }
 
-    // 4) Calculate the current stock:
+    // 4) Calculate Vendor returns
+
+    $sqlVendorReturns ="SELECT SUM(ret_qty) AS tot_qty_ret FROM tbl_item_return WHERE p_id='$p_id'";
+    $rsVendorsReturns =$conn->query($sqlVendorReturns);
+    $vendorRetQty =0;
+    if($rsVendorsReturns->num_rows > 0){
+      $rowVenRet =$rsVendorsReturns->fetch_assoc();
+      $vendorRetQty =$rowVenRet['tot_qty_ret'];
+    }
+
+    // 5) Calculate the current stock:
     //    Total stock from expiry - (ordered but not returned) + (returned qty)
     $currentStock = $expiryQty - $orderQty + $returnQty;
-
+    $currentStock -=$vendorRetQty;
     return $currentStock;
 }
 

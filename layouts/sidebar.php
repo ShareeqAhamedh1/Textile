@@ -33,7 +33,7 @@
           <a href="vendor.php" ><i class="fa fa-desktop"></i><span> Vendor Management</span> </a>
         </li>
         <li class="<?php if($pg_name=='return_vendor.php'){echo('active');} ?>" >
-          <a href="return_vendor.php" ><i class="fa fa-desktop"></i><span> Vendor Returns</span> </a>
+          <a href="return_vendor.php" ><i class="fa fa-reply"></i><span> Vendor Returns</span> </a>
         </li>
         <li class="<?php if($pg_name=='customers.php'){echo('active');} ?>">
     <a href="customers.php"><i class="fa fa-users"></i><span> Customer Management</span></a>
