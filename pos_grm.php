@@ -20,7 +20,7 @@
 					</div>
 					<!-- /add -->
 
-						<div class="card">
+						<!-- <div class="card">
 							<div class="card-body">
 								<div class="row">
 
@@ -39,12 +39,16 @@
 									</div>
 								</div>
 							</div>
-						</div>
-						<button type="button" class="btn btn-secondary btn-sm" name="button" onclick="selectBillStatus(0)">Drafts</button> ||
-							<button type="button" class="btn btn-success btn-sm" name="button" onclick="selectBillStatus(1)">Completed Bills</button> <br> <br>
-						<div id="grm_table" class="table-responsive">
+						</div> -->
+					<div class="card">
+						<div class="card-body">
+							<button type="button" class="btn btn-secondary btn-sm" name="button" onclick="selectBillStatus(0)">Drafts</button> ||
+								<button type="button" class="btn btn-success btn-sm" name="button" onclick="selectBillStatus(1)">Completed Bills</button> <br> <br>
+							<div id="grm_table" class="table-responsive">
 
+							</div>
 						</div>
+					</div>
 
 					<!-- /add -->
 				</div>
