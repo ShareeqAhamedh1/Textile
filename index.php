@@ -398,6 +398,8 @@ while($oRow = $res_today_orders_3->fetch_assoc()){
         $netOrder = 0;
     }
 
+    $order_st=getDataBack();
+
     switch($ptype){
         case 0: $total_payments_today['cash']   += $netOrder; break;
         case 1: $total_payments_today['online'] += $netOrder; break;
@@ -407,7 +409,7 @@ while($oRow = $res_today_orders_3->fetch_assoc()){
 
 }
 
-$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=0 AND DATE(order_date) = '$today_date'";
+$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=0 AND DATE(order_date) = '$today_date' AND order_st=1";
 $rsDisc=$conn->query($sqlDisc);
 if($rsDisc->num_rows > 0){
   $rowDisc=$rsDisc->fetch_assoc();
@@ -415,7 +417,7 @@ if($rsDisc->num_rows > 0){
   $total_payments_today['cash']   -= $billDisc_cash+$totRetVal ;
 }
 
-$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=3 AND DATE(order_date) = '$today_date'";
+$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=3 AND DATE(order_date) = '$today_date' AND order_st=1";
 $rsDisc=$conn->query($sqlDisc);
 if($rsDisc->num_rows > 0){
   $rowDisc=$rsDisc->fetch_assoc();
@@ -423,7 +425,7 @@ if($rsDisc->num_rows > 0){
   $total_payments_today['credit']   -= $billDisc_cash+$totRetVal ;
 }
 
-$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=2 AND DATE(order_date) = '$today_date'";
+$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=2 AND DATE(order_date) = '$today_date' AND order_st=1";
 $rsDisc=$conn->query($sqlDisc);
 if($rsDisc->num_rows > 0){
   $rowDisc=$rsDisc->fetch_assoc();
@@ -431,7 +433,7 @@ if($rsDisc->num_rows > 0){
   $total_payments_today['bank']   -= $billDisc_cash+$totRetVal ;
 }
 
-$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=1 AND DATE(order_date) = '$today_date'";
+$sqlDisc="SELECT SUM(discount_price) AS bill_disc FROM tbl_order_grm WHERE payment_type=1 AND DATE(order_date) = '$today_date' AND order_st=1";
 $rsDisc=$conn->query($sqlDisc);
 if($rsDisc->num_rows > 0){
   $rowDisc=$rsDisc->fetch_assoc();
