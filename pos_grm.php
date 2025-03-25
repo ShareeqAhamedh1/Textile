@@ -7,7 +7,7 @@
 
            <!-- Sidebar -->
 			<?php include './layouts/sidebar.php';  ?>
-	
+
 			<!-- /Sidebar -->
 
 			<div class="page-wrapper">
@@ -24,14 +24,6 @@
 							<div class="card-body">
 								<div class="row">
 
-									<!-- <div class="col-lg-3 col-sm-6 col-12">
-										<div class="form-group">
-											<label>Enter New Order Reference</label>
-
-												<input name="order_ref" type="text" id="order_ref" value="">
-
-										</div>
-									</div> -->
 									<div class="col-lg-3 col-sm-6 col-12">
 										<div class="form-group">
 											<label>Date</label>
@@ -48,6 +40,8 @@
 								</div>
 							</div>
 						</div>
+						<button type="button" class="btn btn-secondary btn-sm" name="button" onclick="selectBillStatus(0)">Drafts</button> ||
+							<button type="button" class="btn btn-success btn-sm" name="button" onclick="selectBillStatus(1)">Completed Bills</button> <br> <br>
 						<div id="grm_table" class="table-responsive">
 
 						</div>
@@ -100,6 +94,19 @@
 		<!-- <script src="assets/plugins/select2/js/custom-select.js"></script> -->
 
 		<script type="text/javascript">
+
+		function selectBillStatus(st,query = ''){
+		  $.ajax({
+		    url: 'get_orders.php',  // This is the file that handles the search query
+		    type: 'GET',
+		    data: { search: query,
+		            or_st:st
+		     },
+		    success: function(data) {
+		      $('#orderTable tbody').html(data);
+		    }
+		  });
+		}
 
 		function update(order_id){
 

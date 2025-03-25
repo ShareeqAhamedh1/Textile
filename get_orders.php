@@ -3,14 +3,16 @@ include './backend/conn.php';
 
 // Get search query
 $search_query = isset($_GET['search']) ? $_GET['search'] : '';
+$orderSelected =isset($_GET['or_st']) ? $_GET['or_st'] : 0;
 
 // Fetch order details along with customer details
 $sql = "SELECT g.*, c.c_name, c.c_phone, c.c_id
         FROM tbl_order_grm g
         LEFT JOIN tbl_customer c ON g.customer_id = c.c_id
-        WHERE g.order_ref LIKE '%$search_query%'
-        OR c.c_name LIKE '%$search_query%'
-        OR c.c_phone LIKE '%$search_query%'
+        WHERE g.order_st = '$orderSelected'
+          AND (g.order_ref LIKE '%$search_query%'
+               OR c.c_name LIKE '%$search_query%'
+               OR c.c_phone LIKE '%$search_query%')
         ORDER BY g.id DESC";
 
 $rs = $conn->query($sql);
@@ -75,7 +77,7 @@ if ($rs->num_rows > 0) {
 
         ?>
         <tr>
-            <td><?= htmlspecialchars($row['order_ref']) ?> - <?= $orSt ?></td>
+            <td><?= htmlspecialchars($row['order_ref']) ?> - <?= $orSt ?> <?= $orderSelected ?> </td>
             <td><?= $customer ?></td>
             <td><?= $customerPhone ?></td>
             <td><?= htmlspecialchars($row['order_date']) ?></td>

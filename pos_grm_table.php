@@ -5,6 +5,7 @@
   <input type="text" id="search" class="form-control me-2" placeholder="Search by Customer Name or Reference Number">
   <button id="clearSearch" class="btn btn-secondary">Clear</button>
 </div>
+
 <table class="table datanew" id="orderTable">
   <thead>
     <tr>
@@ -23,6 +24,7 @@
   </tbody>
 </table>
 
+
 <script type="text/javascript">
  $(document).ready(function () {
 
@@ -37,6 +39,8 @@ function loadTableData(query = '') {
     }
   });
 }
+
+
 
 // Trigger search function on keyup event (as you type)
 $('#search').keyup(function () {
