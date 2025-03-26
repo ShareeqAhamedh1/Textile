@@ -3,7 +3,9 @@
 			<!-- Header -->
 			<?php include 'layouts/header.php'; ?>
 			<!-- Header -->
-
+			<?php
+				$new_code =0;
+			 ?>
 			<!-- Sidebar -->
 			<?php include 'layouts/sidebar.php'; ?>
 			<!-- /Sidebar -->
