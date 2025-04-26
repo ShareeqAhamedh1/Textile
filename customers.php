@@ -10,7 +10,9 @@ include 'backend/conn.php';
   <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="assets/plugins/fontawesome/css/fontawesome.min.css">
   <link rel="stylesheet" href="assets/plugins/fontawesome/css/all.min.css">
-
+<?php
+$newBill =0;
+ ?>
 
 </head>
 <body>

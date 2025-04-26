@@ -1,4 +1,6 @@
-
+<?php
+	$newBill =0;
+ ?>
 
 			<!-- Header -->
 			<?php include 'layouts/header.php'; ?>

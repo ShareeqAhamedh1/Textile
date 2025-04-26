@@ -1,6 +1,11 @@
 <?php
 include './backend/conn.php';
 
+$bill_id=0;
+$bill_system = true;
+
+$newBill = getNewBill($bill_id);
+
 $billId = $_REQUEST['bill_id'];
 $sqlGrm = "SELECT * FROM tbl_order_grm WHERE id='$billId'";
 $rsGrm = $conn->query($sqlGrm);

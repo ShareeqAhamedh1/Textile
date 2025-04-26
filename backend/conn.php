@@ -42,6 +42,9 @@ function generateOrderRef($conn) {
     return date('Y-m-d') . "-" . $newNumber;
 }
 
+function getNewBill($bill_id){
+  return $bill_id;
+}
 
 function getReturnValue($conn, $p_id){
     $sqlReturn = "
